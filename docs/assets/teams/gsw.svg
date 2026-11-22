@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="gswGrad" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="29" fill="url(#gswGrad)" stroke="#FACC15" stroke-width="3.2" />
+  <circle cx="32" cy="32" r="23.5" stroke="#FACC15" stroke-opacity="0.45" stroke-width="1.2" />
+  <path d="M14 42 Q32 34 50 42" stroke="#FACC15" stroke-width="1.8" stroke-linecap="round" opacity="0.7" />
+  <text x="32" y="34" text-anchor="middle" fill="#FEF08A" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14.5" font-weight="900" letter-spacing="0.6">GSW</text>
+</svg>

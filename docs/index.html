@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy Basketball — Interactive SwiftUI &amp; Django API Showcase</title>
+  <meta name="description" content="Source-faithful interactive phone-framed presentation of the Fantasy Basketball SwiftUI app and Django REST Framework backend using verified Creative Commons portraits and original geometric club badges." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="assets/basketball-logo.svg" width="32" height="32" alt="" aria-hidden="true" style="border-radius:50%" />
+        <div>
+          <div class="brand-title">Fantasy Basketball</div>
+          <div class="brand-sub">SwiftUI iOS App &amp; Django REST API Showcase</div>
+        </div>
+      </div>
+
+      <div class="sim-pill" role="note" aria-label="Static simulation disclosure">
+        <span class="sim-dot" aria-hidden="true"></span>
+        Browser Simulation · Licensed Media &amp; Original Badges · No Live Backend
+      </div>
+
+      <div class="topbar-actions">
+        <button id="btnAddCredits" class="btn" type="button" title="Add demo credits to test all three pack tiers">
+          +1,000 Demo Credits
+        </button>
+        <button id="btnResetDemo" class="btn btn-ghost" type="button">
+          Reset Session
+        </button>
+        <a class="btn btn-primary" href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">
+          GitHub Repository ↗
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero-strip" aria-labelledby="heroHeading">
+      <p class="hero-kicker">Computer Engineering Graduation Project · SwiftUI + Django REST Framework</p>
+      <h1 id="heroHeading" class="hero-title">Interactive Phone Walkthrough &amp; Live Django API Inspector</h1>
+      <p class="hero-desc">
+        Faithful browser presentation of the existing SwiftUI application (<code>ContentView</code>, <code>HomeView</code>, <code>TeamsView</code>, <code>PlayersView</code>, 3D tap-to-flip <code>PlayerDetailView</code>, <code>PackMarket</code>, <code>CardPackDetailView</code>, and <code>MyCardsView</code>) preserving all 4 teams and 8 real players with Creative Commons portraits, original geometric club badges, and live Django REST API traces.
+      </p>
+    </section>
+
+    <nav class="tour-bar" aria-label="Guided walkthrough">
+      <span class="tour-label">Guided Tour</span>
+      <button class="tour-pill active" type="button" data-tour="welcome">1. Welcome</button>
+      <button class="tour-pill" type="button" data-tour="home">2. Home Menu</button>
+      <button class="tour-pill" type="button" data-tour="market">3. PackMarket</button>
+      <button class="tour-pill" type="button" data-tour="pack-diamond">4. Open Pack</button>
+      <button class="tour-pill" type="button" data-tour="my-cards">5. My Cards</button>
+      <button class="tour-pill" type="button" data-tour="players">6. Players Grid</button>
+      <button class="tour-pill" type="button" data-tour="player-card">7. Stephen Curry 3D Card</button>
+      <button class="tour-pill" type="button" data-tour="teams">8. Teams</button>
+    </nav>
+
+    <div class="workspace-grid">
+      <!-- Left: Faithful iOS SwiftUI Phone Frame (pure NavigationStack, no invented bottom tab bar) -->
+      <section class="phone-stage" aria-label="Interactive iOS SwiftUI application presentation">
+        <div class="phone-bezel">
+          <div class="phone-screen">
+            <div id="iosStatusbar" class="ios-statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <div class="dynamic-island"></div>
+              <div class="ios-icons">
+                <span>5G</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div id="phoneBody" class="phone-app-body" tabindex="0" aria-live="polite"></div>
+
+            <div id="homeIndicator" class="home-indicator" aria-hidden="true"></div>
+          </div>
+        </div>
+        <p class="phone-caption">
+          Browser simulation of <code>frontend/FantasyBasketball/*.swift</code> with verified CC player portraits, original geometric club badges, and <a href="notices.html">media notices</a>.
+        </p>
+      </section>
+
+      <!-- Right: Engineering & API Inspector -->
+      <section class="inspector-shell" aria-label="Technical API and architecture inspector">
+        <div class="inspector-tabs" role="tablist" aria-label="Inspector sections">
+          <button id="tabTrace" class="inspector-tab" role="tab" type="button" aria-selected="true" aria-controls="panelTrace" data-inspector="trace">
+            Live API Trace
+          </button>
+          <button id="tabLeague" class="inspector-tab" role="tab" type="button" aria-selected="false" aria-controls="panelLeague" data-inspector="league">
+            Backend-Only League Engine
+          </button>
+          <button id="tabArch" class="inspector-tab" role="tab" type="button" aria-selected="false" aria-controls="panelArch" data-inspector="arch">
+            Architecture &amp; Security
+          </button>
+        </div>
+
+        <div id="panelTrace" class="inspector-body" role="tabpanel" aria-labelledby="tabTrace"></div>
+        <div id="panelLeague" class="inspector-body" role="tabpanel" aria-labelledby="tabLeague" hidden></div>
+        <div id="panelArch" class="inspector-body" role="tabpanel" aria-labelledby="tabArch" hidden></div>
+      </section>
+    </div>
+
+    <div id="srAnnouncer" class="sr-only" aria-live="assertive"></div>
+
+    <footer class="footer">
+      <span>Static browser simulation · Unaffiliated portfolio demo · <a href="notices.html">Third-Party Photo Credits &amp; Licenses</a></span>
+      <span>Built by <a href="https://github.com/erturkeryavuz" target="_blank" rel="noopener noreferrer">Ertürk Eryavuz</a></span>
+    </footer>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

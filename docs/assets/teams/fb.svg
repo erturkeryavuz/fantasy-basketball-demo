@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <clipPath id="fbShield">
+      <path d="M32 5 L55 14 V35 C55 47 45 55 32 59 C19 55 9 47 9 35 V14 Z" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#fbShield)">
+    <rect x="9" y="5" width="46" height="54" fill="#0F172A" />
+    <rect x="17" y="5" width="9" height="54" fill="#FACC15" opacity="0.22" />
+    <rect x="38" y="5" width="9" height="54" fill="#FACC15" opacity="0.22" />
+  </g>
+  <path d="M32 5 L55 14 V35 C55 47 45 55 32 59 C19 55 9 47 9 35 V14 Z" stroke="#FACC15" stroke-width="3" stroke-linejoin="round" />
+  <text x="32" y="39" text-anchor="middle" fill="#FEF08A" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="16" font-weight="900" letter-spacing="1">FB</text>
+</svg>

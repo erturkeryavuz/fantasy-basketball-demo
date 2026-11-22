@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="phxGrad" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#312E81" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+  </defs>
+  <path d="M32 4 L56 15 V35 C56 48 45 56 32 60 C19 56 8 48 8 35 V15 Z" fill="url(#phxGrad)" stroke="#FB923C" stroke-width="2.8" stroke-linejoin="round" />
+  <line x1="16" y1="22" x2="48" y2="22" stroke="#FDBA74" stroke-width="1.4" opacity="0.6" />
+  <text x="32" y="39" text-anchor="middle" fill="#FFF7ED" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14.5" font-weight="900" letter-spacing="0.8">PHX</text>
+</svg>
