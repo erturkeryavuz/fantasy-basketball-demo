@@ -1,0 +1,453 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" fill="none">
+  <defs>
+    <!-- Foundation Obsidian & Editorial Studio Lighting -->
+    <linearGradient id="bgBase" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B0D10" />
+      <stop offset="52%" stop-color="#111419" />
+      <stop offset="100%" stop-color="#0A0C0F" />
+    </linearGradient>
+
+    <radialGradient id="amberHalo" cx="1105" cy="435" r="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EA6A1A" stop-opacity="0.21" />
+      <stop offset="36%" stop-color="#B49A78" stop-opacity="0.09" />
+      <stop offset="70%" stop-color="#1E3A6E" stop-opacity="0.07" />
+      <stop offset="100%" stop-color="#0B0D10" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="leftStudioGlow" cx="250" cy="340" r="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#B49A78" stop-opacity="0.08" />
+      <stop offset="60%" stop-color="#758D92" stop-opacity="0.03" />
+      <stop offset="100%" stop-color="#0B0D10" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Basketball Emblem Fill -->
+    <linearGradient id="ballGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB72B" />
+      <stop offset="52%" stop-color="#F26B1D" />
+      <stop offset="100%" stop-color="#B83508" />
+    </linearGradient>
+
+    <!-- Dark Blue Diamond Card Surface -->
+    <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0E2554" />
+      <stop offset="38%" stop-color="#1A428D" />
+      <stop offset="74%" stop-color="#0D224C" />
+      <stop offset="100%" stop-color="#081124" />
+    </linearGradient>
+
+    <linearGradient id="cardBorder" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ECCFA1" stop-opacity="0.95" />
+      <stop offset="34%" stop-color="#7CB4FF" stop-opacity="0.78" />
+      <stop offset="68%" stop-color="#B49A78" stop-opacity="0.72" />
+      <stop offset="100%" stop-color="#4A7CE0" stop-opacity="0.9" />
+    </linearGradient>
+
+    <linearGradient id="cardSheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="32%" stop-color="#FFFFFF" stop-opacity="0.04" />
+      <stop offset="54%" stop-color="#FFFFFF" stop-opacity="0" />
+      <stop offset="76%" stop-color="#9AC5FF" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <radialGradient id="cardCoreGlow" cx="0.5" cy="0.38" r="0.56">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.46" />
+      <stop offset="46%" stop-color="#2563EB" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#081124" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Faceted Diamond Prism Gradients -->
+    <linearGradient id="facetTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#BFDBFE" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.55" />
+    </linearGradient>
+    <linearGradient id="facetLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E40AF" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#0F1F47" stop-opacity="0.95" />
+    </linearGradient>
+    <linearGradient id="facetRight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.78" />
+      <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0.88" />
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F6DFB5" />
+      <stop offset="50%" stop-color="#E59838" />
+      <stop offset="100%" stop-color="#B49A78" />
+    </linearGradient>
+
+    <!-- Mobile Screen Surface -->
+    <linearGradient id="phoneSurface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#191D24" />
+      <stop offset="100%" stop-color="#111419" />
+    </linearGradient>
+
+    <linearGradient id="phoneBorder" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F1EDE5" stop-opacity="0.22" />
+      <stop offset="50%" stop-color="#B49A78" stop-opacity="0.14" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.06" />
+    </linearGradient>
+
+    <!-- Pack Tier Gradients -->
+    <linearGradient id="goldPack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B2E19" />
+      <stop offset="100%" stop-color="#1E1810" />
+    </linearGradient>
+    <linearGradient id="amethystPack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E1C42" />
+      <stop offset="100%" stop-color="#181224" />
+    </linearGradient>
+    <linearGradient id="diamondPack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#163259" />
+      <stop offset="100%" stop-color="#101B2E" />
+    </linearGradient>
+
+    <!-- API Chip Surface -->
+    <linearGradient id="apiChipBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#191D23" stop-opacity="0.98" />
+      <stop offset="100%" stop-color="#101318" stop-opacity="0.98" />
+    </linearGradient>
+
+    <!-- Soft Studio Drop Shadows -->
+    <filter id="shadowHeavy" x="-20%" y="-20%" width="140%" height="145%">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#000000" flood-opacity="0.68" />
+    </filter>
+    <filter id="shadowMedium" x="-18%" y="-18%" width="136%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000000" flood-opacity="0.52" />
+    </filter>
+    <filter id="shadowSoft" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+
+    <!-- Clip Paths -->
+    <clipPath id="cardClip">
+      <rect x="954" y="156" width="310" height="466" rx="26" />
+    </clipPath>
+    <clipPath id="miniBallClip">
+      <circle cx="0" cy="0" r="18" />
+    </clipPath>
+    <clipPath id="heroBallClip">
+      <circle cx="0" cy="-16" r="46" />
+    </clipPath>
+    <clipPath id="kickerBallClip">
+      <circle cx="106" cy="212" r="20" />
+    </clipPath>
+    <clipPath id="canvasClip">
+      <rect x="0" y="0" width="1600" height="900" />
+    </clipPath>
+  </defs>
+
+  <!-- 1. BACKGROUND CANVAS -->
+  <g clip-path="url(#canvasClip)">
+    <rect width="1600" height="900" fill="url(#bgBase)" />
+    <rect width="1600" height="900" fill="url(#amberHalo)" />
+    <rect width="1600" height="900" fill="url(#leftStudioGlow)" />
+
+    <!-- Subtle Editorial Architectural Grid -->
+    <g stroke="#F1EDE5" stroke-opacity="0.045" stroke-width="1.2">
+      <rect x="34" y="34" width="1532" height="832" rx="18" />
+      <line x1="654" y1="34" x2="654" y2="866" stroke-dasharray="4 8" />
+    </g>
+
+    <!-- Restrained Basketball Court Geometry -->
+    <g stroke="#B49A78" stroke-opacity="0.11" stroke-width="1.5">
+      <circle cx="1109" cy="436" r="405" />
+      <circle cx="1109" cy="436" r="278" stroke-opacity="0.08" stroke-dasharray="6 10" />
+      <line x1="654" y1="436" x2="1566" y2="436" stroke-opacity="0.07" />
+      <circle cx="0" cy="900" r="320" stroke="#758D92" stroke-opacity="0.08" />
+      <circle cx="1600" cy="0" r="270" stroke="#EA6A1A" stroke-opacity="0.10" />
+    </g>
+
+    <!-- Corner Registration Ticks -->
+    <g stroke="#B49A78" stroke-opacity="0.35" stroke-width="1.5">
+      <path d="M54 70 L54 54 L70 54" />
+      <path d="M1546 70 L1546 54 L1530 54" />
+      <path d="M54 830 L54 846 L70 846" />
+      <path d="M1546 830 L1546 846 L1530 846" />
+    </g>
+
+    <!-- 2. LEFT EDITORIAL TYPOGRAPHY COLUMN -->
+    <g id="editorial-column">
+      <!-- Brand Emblem + Kicker -->
+      <circle cx="106" cy="212" r="20" fill="url(#ballGrad)" />
+      <g clip-path="url(#kickerBallClip)" stroke="#181C24" stroke-width="2.4" stroke-linecap="round">
+        <line x1="90" y1="196" x2="122" y2="228" />
+        <line x1="122" y1="196" x2="90" y2="228" />
+        <path d="M104 190 C105 203 97 211 84 211" />
+        <path d="M128 213 C115 213 107 221 108 234" />
+      </g>
+      <line x1="140" y1="212" x2="166" y2="212" stroke="#B49A78" stroke-width="1.5" />
+      <text x="178" y="217" fill="#B49A78" font-family="'SF Mono', 'Menlo', 'Monaco', monospace" font-size="13" font-weight="600" letter-spacing="2.4">FULL-STACK iOS &amp; DJANGO SHOWCASE</text>
+
+      <!-- Main Hero Title -->
+      <text x="84" y="346" fill="#F1EDE5" font-family="'SF Pro Display', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="94" font-weight="700" letter-spacing="-2.6">Fantasy</text>
+      <text x="84" y="446" fill="#C9B08C" font-family="'Iowan Old Style', 'Georgia', 'Times New Roman', serif" font-style="italic" font-size="98" font-weight="400" letter-spacing="-1.6">Basketball</text>
+
+      <!-- Accent Hairline Divider -->
+      <rect x="86" y="484" width="68" height="3" rx="1.5" fill="#E87324" />
+      <rect x="162" y="485" width="144" height="1" fill="#B49A78" fill-opacity="0.35" />
+
+      <!-- Grounded Supporting Line -->
+      <text x="86" y="538" fill="#E6E1D7" font-family="'SF Pro Text', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="22.5" font-weight="500" letter-spacing="-0.2">iOS Experience  ·  Django Backend</text>
+      <text x="86" y="572" fill="#A9A398" font-family="'SF Pro Text', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="22.5" font-weight="400" letter-spacing="-0.1">Collectible Player Cards</text>
+
+      <!-- Concise Product Scope Summary -->
+      <text x="86" y="630" fill="#8C939C" font-family="'SF Pro Text', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="15.5" font-weight="400">
+        <tspan x="86" dy="0">Team rosters, 4-filter player directory, 6 rarity tiers,</tspan>
+        <tspan x="86" dy="25">PackMarket openings, and live DRF endpoint inspection.</tspan>
+      </text>
+
+      <!-- Architecture Metadata Strip -->
+      <g transform="translate(86, 706)">
+        <rect x="0" y="0" width="128" height="36" rx="18" fill="#171A20" stroke="#F1EDE5" stroke-opacity="0.14" />
+        <text x="64" y="23" text-anchor="middle" fill="#E4DFD5" font-family="'SF Mono', 'Menlo', monospace" font-size="12.5" font-weight="500">SwiftUI iOS</text>
+
+        <rect x="140" y="0" width="142" height="36" rx="18" fill="#171A20" stroke="#F1EDE5" stroke-opacity="0.14" />
+        <text x="211" y="23" text-anchor="middle" fill="#E4DFD5" font-family="'SF Mono', 'Menlo', monospace" font-size="12.5" font-weight="500">Django 5 · DRF</text>
+
+        <rect x="294" y="0" width="150" height="36" rx="18" fill="#1E1813" stroke="#E87324" stroke-opacity="0.48" />
+        <text x="369" y="23" text-anchor="middle" fill="#F29B52" font-family="'SF Mono', 'Menlo', monospace" font-size="12.5" font-weight="600">Watch Tutorial</text>
+      </g>
+
+      <!-- Subtle Attribution Line -->
+      <text x="86" y="796" fill="#6F7680" font-family="'SF Mono', 'Menlo', monospace" font-size="12" letter-spacing="1.2">ERTÜRK ERYAVUZ  ·  INTERACTIVE PORTFOLIO SHOWCASE</text>
+    </g>
+
+    <!-- 3. RIGHT-SIDE PRODUCT SHOWCASE COMPOSITION (Zero Clipped Text Across All 3 Layers) -->
+
+    <!-- 3A. BACK-LEFT MOBILE SCREEN: Teams & Player Directory (x=688..964, Card starts at x=954 -> only 10px edge overlap!) -->
+    <g id="screen-teams-players" filter="url(#shadowMedium)" transform="translate(688, 122)">
+      <rect x="0" y="0" width="276" height="536" rx="34" fill="url(#phoneSurface)" stroke="url(#phoneBorder)" stroke-width="1.5" />
+      <!-- Dynamic Island + Status -->
+      <text x="24" y="30" fill="#A9B0BA" font-family="'SF Pro Text', -apple-system, sans-serif" font-size="11" font-weight="600">9:41</text>
+      <rect x="102" y="16" width="72" height="19" rx="9.5" fill="#090B0E" />
+      <text x="228" y="30" fill="#A9B0BA" font-family="'SF Pro Text', -apple-system, sans-serif" font-size="10.5" font-weight="600">5G</text>
+
+      <!-- Screen Header -->
+      <text x="20" y="68" fill="#B49A78" font-family="'SF Mono', monospace" font-size="9.5" letter-spacing="1.6">SWIFTUI · ROSTER EXPLORER</text>
+      <text x="20" y="94" fill="#F1EDE5" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="21" font-weight="700">Teams &amp; Players</text>
+
+      <!-- 4-Filter Strip -->
+      <g transform="translate(20, 110)">
+        <rect x="0" y="0" width="40" height="24" rx="12" fill="#E87324" />
+        <text x="20" y="15.5" text-anchor="middle" fill="#101113" font-family="'SF Pro Text', sans-serif" font-size="10.5" font-weight="700">All</text>
+
+        <rect x="46" y="0" width="56" height="24" rx="12" fill="#232832" stroke="#F1EDE5" stroke-opacity="0.10" />
+        <text x="74" y="15.5" text-anchor="middle" fill="#C9C4BA" font-family="'SF Pro Text', sans-serif" font-size="10.5" font-weight="500">Guard</text>
+
+        <rect x="108" y="0" width="64" height="24" rx="12" fill="#232832" stroke="#F1EDE5" stroke-opacity="0.10" />
+        <text x="140" y="15.5" text-anchor="middle" fill="#C9C4BA" font-family="'SF Pro Text', sans-serif" font-size="10.5" font-weight="500">Forward</text>
+
+        <rect x="178" y="0" width="44" height="24" rx="12" fill="#232832" stroke="#F1EDE5" stroke-opacity="0.10" />
+        <text x="200" y="15.5" text-anchor="middle" fill="#C9C4BA" font-family="'SF Pro Text', sans-serif" font-size="10" font-weight="500">90+</text>
+      </g>
+
+      <!-- Club Cards (All content comfortably inside x: 20..246 so card at screen-x=266 never clips any text!) -->
+      <!-- Row 1: GSW -->
+      <g transform="translate(20, 152)">
+        <rect x="0" y="0" width="228" height="72" rx="14" fill="#1E232C" stroke="#F1EDE5" stroke-opacity="0.08" />
+        <circle cx="32" cy="36" r="19" fill="#1D428A" stroke="#FFC72C" stroke-width="2" />
+        <text x="32" y="40" text-anchor="middle" fill="#FFC72C" font-family="'SF Pro Display', sans-serif" font-size="11" font-weight="800">GSW</text>
+        <text x="62" y="31" fill="#F1EDE5" font-family="'SF Pro Text', sans-serif" font-size="13" font-weight="600">Golden State</text>
+        <text x="62" y="49" fill="#8C94A0" font-family="'SF Pro Text', sans-serif" font-size="10.5">San Francisco · 1946</text>
+        <rect x="184" y="24" width="34" height="24" rx="8" fill="#122B5E" stroke="#60A5FA" stroke-opacity="0.5" />
+        <text x="201" y="40" text-anchor="middle" fill="#93C5FD" font-family="'SF Mono', monospace" font-size="11" font-weight="700">97</text>
+      </g>
+
+      <!-- Row 2: LAL -->
+      <g transform="translate(20, 236)">
+        <rect x="0" y="0" width="228" height="72" rx="14" fill="#1E232C" stroke="#F1EDE5" stroke-opacity="0.08" />
+        <circle cx="32" cy="36" r="19" fill="#552583" stroke="#FDB927" stroke-width="2" />
+        <text x="32" y="40" text-anchor="middle" fill="#FDB927" font-family="'SF Pro Display', sans-serif" font-size="11" font-weight="800">LAL</text>
+        <text x="62" y="31" fill="#F1EDE5" font-family="'SF Pro Text', sans-serif" font-size="13" font-weight="600">Los Angeles</text>
+        <text x="62" y="49" fill="#8C94A0" font-family="'SF Pro Text', sans-serif" font-size="10.5">Los Angeles · 1947</text>
+        <rect x="184" y="24" width="34" height="24" rx="8" fill="#122B5E" stroke="#60A5FA" stroke-opacity="0.5" />
+        <text x="201" y="40" text-anchor="middle" fill="#93C5FD" font-family="'SF Mono', monospace" font-size="11" font-weight="700">96</text>
+      </g>
+
+      <!-- Row 3: PHX -->
+      <g transform="translate(20, 320)">
+        <rect x="0" y="0" width="228" height="72" rx="14" fill="#1E232C" stroke="#F1EDE5" stroke-opacity="0.08" />
+        <circle cx="32" cy="36" r="19" fill="#2A1B4E" stroke="#E56020" stroke-width="2" />
+        <text x="32" y="40" text-anchor="middle" fill="#FF9248" font-family="'SF Pro Display', sans-serif" font-size="11" font-weight="800">PHX</text>
+        <text x="62" y="31" fill="#F1EDE5" font-family="'SF Pro Text', sans-serif" font-size="13" font-weight="600">Phoenix Suns</text>
+        <text x="62" y="49" fill="#8C94A0" font-family="'SF Pro Text', sans-serif" font-size="10.5">Phoenix · 1968</text>
+        <rect x="184" y="24" width="34" height="24" rx="8" fill="#4A173B" stroke="#F472B6" stroke-opacity="0.5" />
+        <text x="201" y="40" text-anchor="middle" fill="#F9A8D4" font-family="'SF Mono', monospace" font-size="11" font-weight="700">94</text>
+      </g>
+
+      <!-- Row 4: FB -->
+      <g transform="translate(20, 404)">
+        <rect x="0" y="0" width="228" height="72" rx="14" fill="#1E232C" stroke="#F1EDE5" stroke-opacity="0.08" />
+        <circle cx="32" cy="36" r="19" fill="#11284B" stroke="#FACC15" stroke-width="2" />
+        <text x="32" y="40" text-anchor="middle" fill="#FDE047" font-family="'SF Pro Display', sans-serif" font-size="11.5" font-weight="800">FB</text>
+        <text x="62" y="31" fill="#F1EDE5" font-family="'SF Pro Text', sans-serif" font-size="13" font-weight="600">Istanbul Club</text>
+        <text x="62" y="49" fill="#8C94A0" font-family="'SF Pro Text', sans-serif" font-size="10.5">Istanbul · EuroLeague</text>
+        <rect x="184" y="24" width="34" height="24" rx="8" fill="#13384C" stroke="#38BDF8" stroke-opacity="0.5" />
+        <text x="201" y="40" text-anchor="middle" fill="#7DD3FC" font-family="'SF Mono', monospace" font-size="11" font-weight="700">88</text>
+      </g>
+
+      <!-- Bottom Nav Bar Indicator -->
+      <rect x="20" y="492" width="228" height="30" rx="11" fill="#15181E" stroke="#F1EDE5" stroke-opacity="0.07" />
+      <text x="60" y="511" text-anchor="middle" fill="#E87324" font-family="'SF Pro Text', sans-serif" font-size="10" font-weight="600">Teams</text>
+      <text x="134" y="511" text-anchor="middle" fill="#7B828E" font-family="'SF Pro Text', sans-serif" font-size="10">Players</text>
+      <text x="208" y="511" text-anchor="middle" fill="#7B828E" font-family="'SF Pro Text', sans-serif" font-size="10">Cards</text>
+    </g>
+
+    <!-- 3B. BACK-RIGHT MOBILE SCREEN: PackMarket & Rarity Tiers (x=1254..1536, Card ends at x=1264 -> only 10px edge overlap!) -->
+    <g id="screen-packmarket" filter="url(#shadowMedium)" transform="translate(1254, 142)">
+      <rect x="0" y="0" width="282" height="528" rx="34" fill="url(#phoneSurface)" stroke="url(#phoneBorder)" stroke-width="1.5" />
+      <!-- Dynamic Island + Status -->
+      <text x="28" y="30" fill="#A9B0BA" font-family="'SF Pro Text', -apple-system, sans-serif" font-size="11" font-weight="600">9:41</text>
+      <rect x="105" y="16" width="72" height="19" rx="9.5" fill="#090B0E" />
+      <text x="224" y="30" fill="#F29B52" font-family="'SF Mono', monospace" font-size="10.5" font-weight="600">1000</text>
+
+      <!-- Screen Header (Starts at local x=26, completely clear of center card!) -->
+      <text x="26" y="68" fill="#B49A78" font-family="'SF Mono', monospace" font-size="9.5" letter-spacing="1.6">PACKMARKET · CREDITS</text>
+      <text x="26" y="94" fill="#F1EDE5" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="21" font-weight="700">Card Packs</text>
+
+      <!-- Gold Pack -->
+      <g transform="translate(24, 114)">
+        <rect x="0" y="0" width="234" height="90" rx="16" fill="url(#goldPack)" stroke="#D4A44C" stroke-opacity="0.45" />
+        <rect x="14" y="15" width="44" height="60" rx="8" fill="#2A2112" stroke="#F0C46B" stroke-width="1.2" />
+        <polygon points="36,28 45,45 36,62 27,45" fill="#F0C46B" fill-opacity="0.88" />
+        <text x="72" y="33" fill="#F5DFB0" font-family="'SF Pro Display', sans-serif" font-size="14.5" font-weight="700">Gold Pack</text>
+        <text x="72" y="51" fill="#B6A88D" font-family="'SF Pro Text', sans-serif" font-size="11">1 card · Weighted odds</text>
+        <rect x="72" y="60" width="72" height="20" rx="10" fill="#D4A44C" fill-opacity="0.20" />
+        <text x="108" y="74" text-anchor="middle" fill="#F5D082" font-family="'SF Mono', monospace" font-size="10.5" font-weight="600">500 CR</text>
+      </g>
+
+      <!-- Amethyst Pack -->
+      <g transform="translate(24, 218)">
+        <rect x="0" y="0" width="234" height="90" rx="16" fill="url(#amethystPack)" stroke="#A855F7" stroke-opacity="0.48" />
+        <rect x="14" y="15" width="44" height="60" rx="8" fill="#211432" stroke="#C084FC" stroke-width="1.2" />
+        <polygon points="36,27 46,45 36,63 26,45" fill="#C084FC" fill-opacity="0.88" />
+        <text x="72" y="33" fill="#EFE4FF" font-family="'SF Pro Display', sans-serif" font-size="14.5" font-weight="700">Amethyst Pack</text>
+        <text x="72" y="51" fill="#B3A0CA" font-family="'SF Pro Text', sans-serif" font-size="11">1 card · Boosted tier</text>
+        <rect x="72" y="60" width="72" height="20" rx="10" fill="#A855F7" fill-opacity="0.22" />
+        <text x="108" y="74" text-anchor="middle" fill="#D8B4FE" font-family="'SF Mono', monospace" font-size="10.5" font-weight="600">800 CR</text>
+      </g>
+
+      <!-- Diamond Pack -->
+      <g transform="translate(24, 322)">
+        <rect x="0" y="0" width="234" height="98" rx="16" fill="url(#diamondPack)" stroke="#60A5FA" stroke-opacity="0.72" stroke-width="1.4" />
+        <rect x="14" y="17" width="44" height="64" rx="8" fill="#0E2346" stroke="#93C5FD" stroke-width="1.4" />
+        <polygon points="36,29 47,49 36,69 25,49" fill="#60A5FA" />
+        <polygon points="36,35 43,49 36,63 29,49" fill="#DBEAFE" fill-opacity="0.85" />
+        <text x="72" y="35" fill="#F1EDE5" font-family="'SF Pro Display', sans-serif" font-size="15" font-weight="700">Diamond Pack</text>
+        <text x="72" y="54" fill="#9CB9DE" font-family="'SF Pro Text', sans-serif" font-size="11">6 rarity tiers · Top odds</text>
+        <rect x="72" y="65" width="84" height="22" rx="11" fill="#E87324" />
+        <text x="114" y="80" text-anchor="middle" fill="#101113" font-family="'SF Mono', monospace" font-size="10.5" font-weight="700">1,000 CR</text>
+      </g>
+
+      <!-- Six Rarity Legend -->
+      <g transform="translate(26, 444)">
+        <text x="0" y="12" fill="#8C939C" font-family="'SF Mono', monospace" font-size="9.5" letter-spacing="1.2">SIX RARITY TIERS</text>
+        <circle cx="8" cy="30" r="5" fill="#EAB308" />
+        <circle cx="28" cy="30" r="5" fill="#EF4444" />
+        <circle cx="48" cy="30" r="5" fill="#A855F7" />
+        <circle cx="68" cy="30" r="5" fill="#38BDF8" />
+        <circle cx="88" cy="30" r="5" fill="#EC4899" />
+        <circle cx="108" cy="30" r="5.5" fill="#2563EB" stroke="#93C5FD" stroke-width="1.2" />
+        <text x="128" y="34" fill="#C9B08C" font-family="'SF Mono', monospace" font-size="10">OVR 55 → 97</text>
+      </g>
+    </g>
+
+    <!-- 3C. FOREGROUND CENTERPIECE: Luxury Dark Blue Diamond Collectible Card (Faceted Geometric Basketball Crest) -->
+    <g id="hero-player-card" filter="url(#shadowHeavy)">
+      <rect x="954" y="156" width="310" height="466" rx="26" fill="url(#cardBg)" stroke="url(#cardBorder)" stroke-width="2.2" />
+
+      <g clip-path="url(#cardClip)">
+        <rect x="954" y="156" width="310" height="466" fill="url(#cardCoreGlow)" />
+
+        <!-- Subtle Architectural Prism Rays & Specular Sheen -->
+        <path d="M954 368 L1264 234 L1264 304 L954 438 Z" fill="#FFFFFF" fill-opacity="0.04" />
+        <path d="M954 156 L1150 156 L1006 622 L954 622 Z" fill="url(#cardSheen)" />
+        <circle cx="1109" cy="350" r="112" stroke="#93C5FD" stroke-opacity="0.22" stroke-width="1.2" />
+        <circle cx="1109" cy="350" r="82" stroke="#E8C99B" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="4 6" />
+        <rect x="966" y="168" width="286" height="442" rx="18" stroke="#F1EDE5" stroke-opacity="0.15" stroke-width="1" />
+
+        <!-- Top Card Header: OVR 97 + Position + Emblem -->
+        <text x="988" y="232" fill="#F7F4EE" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="56" font-weight="800" letter-spacing="-2">97</text>
+        <text x="990" y="254" fill="#E8C99B" font-family="'SF Mono', monospace" font-size="12" font-weight="700" letter-spacing="2.2">OVR · GUARD</text>
+
+        <!-- Top-Right Original Basketball Emblem -->
+        <g transform="translate(1214, 212)">
+          <circle cx="0" cy="0" r="18" fill="url(#ballGrad)" />
+          <g clip-path="url(#miniBallClip)" stroke="#141923" stroke-width="2.2" stroke-linecap="round">
+            <line x1="-14" y1="-14" x2="14" y2="14" />
+            <line x1="14" y1="-14" x2="-14" y2="14" />
+            <path d="M-2 -20 C-1 -8 -8 -1 -20 -1" />
+            <path d="M20 1 C8 1 1 8 2 20" />
+          </g>
+        </g>
+
+        <!-- Center Editorial Artwork: Sculpted Dark Blue Diamond Crest + Rim-Lit Basketball + Jersey Emblem (100% Original Vector) -->
+        <g id="diamond-crest-artwork" transform="translate(1109, 352)">
+          <!-- Outer Faceted Diamond Shield -->
+          <polygon points="0,-96 76,-28 52,72 0,94 -52,72 -76,-28" fill="#0B1C42" stroke="url(#goldTrim)" stroke-width="1.8" />
+          <!-- Inner Prism Facets -->
+          <polygon points="0,-86 64,-24 0,-4 -64,-24" fill="url(#facetTop)" fill-opacity="0.45" />
+          <polygon points="-64,-24 0,-4 -44,62" fill="url(#facetLeft)" fill-opacity="0.72" />
+          <polygon points="64,-24 44,62 0,-4" fill="url(#facetRight)" fill-opacity="0.48" />
+          <polygon points="0,-4 44,62 0,82 -44,62" fill="#0D2558" stroke="#7CB4FF" stroke-opacity="0.35" stroke-width="1" />
+
+          <!-- Glowing Orbital Shot Arc -->
+          <path d="M-92 18 Q-10 -86 92 -12" stroke="url(#goldTrim)" stroke-width="1.8" stroke-opacity="0.7" />
+          <circle cx="92" cy="-12" r="3.5" fill="#F6DFB5" />
+
+          <!-- Sculpted Center Basketball -->
+          <circle cx="0" cy="-16" r="46" fill="url(#ballGrad)" stroke="#F6DFB5" stroke-width="1.8" />
+          <g clip-path="url(#heroBallClip)" stroke="#121B31" stroke-width="4.2" stroke-linecap="round">
+            <line x1="-36" y1="-52" x2="36" y2="20" />
+            <line x1="36" y1="-52" x2="-36" y2="20" />
+            <path d="M-4 -64 C-1 -36 -18 -19 -48 -19" />
+            <path d="M48 -13 C18 -13 1 4 4 32" />
+          </g>
+          <!-- Specular Highlight on Basketball -->
+          <ellipse cx="-14" cy="-34" rx="14" ry="8" transform="rotate(-28 -14 -34)" fill="#FFFFFF" fill-opacity="0.28" />
+
+          <!-- Lower Shield Jersey Crest Plate -->
+          <polygon points="-36,40 36,40 28,74 0,84 -28,74" fill="#0A1736" stroke="#E8C99B" stroke-width="1.4" />
+          <text x="0" y="67" text-anchor="middle" fill="#F7F4EE" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="22" font-weight="800" letter-spacing="1">#30</text>
+        </g>
+
+        <!-- Lower Card Data Plate -->
+        <rect x="974" y="460" width="270" height="142" rx="16" fill="#091327" fill-opacity="0.88" stroke="#7CB4FF" stroke-opacity="0.30" />
+
+        <!-- Rarity Tier Badge -->
+        <rect x="1015" y="474" width="188" height="24" rx="12" fill="#163570" stroke="#93C5FD" stroke-opacity="0.62" />
+        <text x="1109" y="490" text-anchor="middle" fill="#DBEAFE" font-family="'SF Mono', monospace" font-size="10.5" font-weight="700" letter-spacing="1.4">DARK BLUE DIAMOND</text>
+
+        <!-- Card Title -->
+        <text x="1109" y="528" text-anchor="middle" fill="#F1EDE5" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="21.5" font-weight="700" letter-spacing="-0.3">Collectible Player Card</text>
+        <text x="1109" y="550" text-anchor="middle" fill="#B49A78" font-family="'SF Mono', monospace" font-size="10.5" letter-spacing="1.1">3D FLIP · 3PT SHOOTING · TIER 95+</text>
+
+        <!-- Grounded Attribute Chips -->
+        <g transform="translate(990, 564)">
+          <rect x="0" y="0" width="74" height="27" rx="8" fill="#112244" stroke="#60A5FA" stroke-opacity="0.26" />
+          <text x="37" y="17.5" text-anchor="middle" fill="#CBD5E1" font-family="'SF Mono', monospace" font-size="10">188 CM</text>
+
+          <rect x="82" y="0" width="74" height="27" rx="8" fill="#112244" stroke="#60A5FA" stroke-opacity="0.26" />
+          <text x="119" y="17.5" text-anchor="middle" fill="#CBD5E1" font-family="'SF Mono', monospace" font-size="10">14 YRS</text>
+
+          <rect x="164" y="0" width="74" height="27" rx="8" fill="#112244" stroke="#E8C99B" stroke-opacity="0.38" />
+          <text x="201" y="17.5" text-anchor="middle" fill="#F0D3A5" font-family="'SF Mono', monospace" font-size="10">MY CARDS</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- 3D. FLOATING ENGINEERING INSPECTOR API TRACE BAR -->
+    <g id="api-trace-bar" filter="url(#shadowSoft)" transform="translate(790, 694)">
+      <rect x="0" y="0" width="644" height="102" rx="18" fill="url(#apiChipBg)" stroke="#B49A78" stroke-opacity="0.38" stroke-width="1.3" />
+      <circle cx="24" cy="30" r="5" fill="#34D399" />
+      <text x="38" y="34" fill="#9CA3AF" font-family="'SF Mono', monospace" font-size="11" font-weight="600" letter-spacing="1.4">ENGINEERING INSPECTOR · DJANGO REST API</text>
+      <rect x="548" y="17" width="74" height="24" rx="12" fill="#0F2D24" stroke="#34D399" stroke-opacity="0.55" />
+      <text x="585" y="33" text-anchor="middle" fill="#6EE7B7" font-family="'SF Mono', monospace" font-size="11" font-weight="700">200 OK</text>
+
+      <rect x="20" y="51" width="66" height="28" rx="7" fill="#2A1D12" stroke="#E87324" stroke-opacity="0.55" />
+      <text x="53" y="69" text-anchor="middle" fill="#F4A261" font-family="'SF Mono', monospace" font-size="12" font-weight="700">POST</text>
+      <text x="100" y="70" fill="#F1EDE5" font-family="'SF Mono', monospace" font-size="14" font-weight="600">/api/open-pack/</text>
+      <text x="252" y="70" fill="#8C94A0" font-family="'SF Mono', monospace" font-size="13">→  rarity: "DarkBlueDiamond"  ·  ovr: 97</text>
+    </g>
+  </g>
+</svg>

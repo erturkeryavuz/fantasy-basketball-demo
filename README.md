@@ -1,5 +1,7 @@
 # Fantasy Basketball — Interactive Portfolio Showcase
 
+[![Fantasy Basketball — Full-Stack SwiftUI iOS and Django REST Framework Showcase featuring Teams & Players, Collectible Dark Blue Diamond Player Card, PackMarket, and Live API Inspector](media/fantasy-basketball-readme-hero.png)](https://erturkeryavuz.github.io/fantasy-basketball-demo/)
+
 **Live Interactive Showcase (GitHub Pages):** [https://erturkeryavuz.github.io/fantasy-basketball-demo/](https://erturkeryavuz.github.io/fantasy-basketball-demo/)
 
 An interactive, zero-dependency, phone-framed static portfolio showcase presenting the **Fantasy Basketball** full-stack graduation project (Maltepe University, B.Sc. in Computer Engineering) by **Ertürk Eryavuz**.
@@ -15,7 +17,7 @@ An interactive, zero-dependency, phone-framed static portfolio showcase presenti
 
 ## Media Licensing & Attribution
 
-All showcase media in `docs/assets/` are either original vector graphics authored for this repository (5 SVGs) or cropped/resized derivatives of openly licensed Wikimedia Commons photographs (9 JPEGs under `CC BY 2.0/4.0` and `CC BY-SA 2.0/4.0`).
+All showcase media in `docs/assets/` are either original vector graphics authored for this repository (5 SVGs) or cropped/resized derivatives of openly licensed Wikimedia Commons photographs (9 JPEGs under `CC BY 2.0/4.0` and `CC BY-SA 2.0/4.0`). Repository cover and social preview assets in `media/` (including editable vector sources in `media/src/`) are 100% original artwork created for this showcase and contain no third-party photographs, athlete likenesses, or club/league trademarks.
 
 - Full attribution table: [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md)
 - Live notices page: [https://erturkeryavuz.github.io/fantasy-basketball-demo/notices.html](https://erturkeryavuz.github.io/fantasy-basketball-demo/notices.html)
