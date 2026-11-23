@@ -3,24 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fantasy Basketball — Interactive SwiftUI &amp; Django API Showcase</title>
-  <meta name="description" content="Source-faithful interactive phone-framed presentation of the Fantasy Basketball SwiftUI app and Django REST Framework backend using verified Creative Commons portraits and original geometric club badges." />
+  <title>Fantasy Basketball — Full-Stack iOS &amp; Django Showcase</title>
+  <meta name="description" content="Interactive phone-framed showcase of the Fantasy Basketball full-stack SwiftUI and Django REST Framework graduation project with a live API inspector and optional guided tutorial." />
+  <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">
-        <img src="assets/basketball-logo.svg" width="32" height="32" alt="" aria-hidden="true" style="border-radius:50%" />
-        <div>
-          <div class="brand-title">Fantasy Basketball</div>
-          <div class="brand-sub">SwiftUI iOS App &amp; Django REST API Showcase</div>
+      <div class="topbar-left">
+        <a class="portfolio-back" href="https://erturkeryavuz.netlify.app/" target="_blank" rel="noopener noreferrer">
+          <span aria-hidden="true">←</span>
+          <span>Back to Portfolio</span>
+        </a>
+        <span class="topbar-divider" aria-hidden="true"></span>
+        <div class="brand">
+          <img src="assets/basketball-logo.svg" width="30" height="30" alt="" aria-hidden="true" class="brand-emblem" />
+          <div>
+            <div class="brand-title">Fantasy Basketball</div>
+            <div class="brand-sub">SwiftUI iOS &amp; Django REST API</div>
+          </div>
         </div>
-      </div>
-
-      <div class="sim-pill" role="note" aria-label="Static simulation disclosure">
-        <span class="sim-dot" aria-hidden="true"></span>
-        Browser Simulation · Licensed Media &amp; Original Badges · No Live Backend
       </div>
 
       <div class="topbar-actions">
@@ -28,13 +31,13 @@
           ▶ Watch Tutorial
         </button>
         <button id="btnAddCredits" class="btn" type="button" title="Add demo credits to test all three pack tiers">
-          +1,000 Demo Credits
+          +1,000 Credits
         </button>
         <button id="btnResetDemo" class="btn btn-ghost" type="button">
           Reset Session
         </button>
-        <a class="btn btn-primary" href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">
-          GitHub Repository ↗
+        <a class="btn btn-ghost" href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">
+          GitHub ↗
         </a>
       </div>
     </div>
@@ -42,15 +45,30 @@
 
   <main class="page">
     <section class="hero-strip" aria-labelledby="heroHeading">
-      <p class="hero-kicker">Computer Engineering Graduation Project · SwiftUI + Django REST Framework</p>
-      <h1 id="heroHeading" class="hero-title">Interactive Phone Walkthrough &amp; Live Django API Inspector</h1>
-      <p class="hero-desc">
-        Faithful browser presentation of the existing SwiftUI application (<code>ContentView</code>, <code>HomeView</code>, <code>TeamsView</code>, <code>PlayersView</code>, 3D tap-to-flip <code>PlayerDetailView</code>, <code>PackMarket</code>, <code>CardPackDetailView</code>, and <code>MyCardsView</code>) preserving all 4 teams and 8 real players with Creative Commons portraits, original geometric club badges, and live Django REST API traces.
-      </p>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="hero-kicker">Full-Stack iOS &amp; Django Project · Maltepe University</p>
+          <h1 id="heroHeading" class="hero-title">Fantasy <em>Basketball</em></h1>
+          <p class="hero-desc">
+            A collectible basketball card and roster-management application pairing a native SwiftUI iOS client with a Django REST Framework backend. Launch the guided tutorial or explore the live app and API traces directly.
+          </p>
+        </div>
+
+        <aside class="hero-meta" aria-label="Project summary">
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Architecture</span>
+            <span class="hero-meta-value">SwiftUI · Django 5 · DRF</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Highlights</span>
+            <span class="hero-meta-value">3D Card Flip · PackMarket · Live Trace</span>
+          </div>
+        </aside>
+      </div>
     </section>
 
     <nav class="tour-bar" aria-label="Guided walkthrough">
-      <span class="tour-label">Guided Tour</span>
+      <span class="tour-label">Manual Tour</span>
       <button class="tour-pill active" type="button" data-tour="welcome">1. Welcome</button>
       <button class="tour-pill" type="button" data-tour="home">2. Home Menu</button>
       <button class="tour-pill" type="button" data-tour="market">3. PackMarket</button>
@@ -102,7 +120,7 @@
           </div>
         </div>
         <p class="phone-caption">
-          Browser simulation of <code>frontend/FantasyBasketball/*.swift</code> with verified CC player portraits, original geometric club badges, and <a href="notices.html">media notices</a>.
+          Interactive SwiftUI browser simulation · <a href="notices.html">Media credits &amp; licenses</a>
         </p>
       </section>
 
@@ -129,8 +147,16 @@
     <div id="srAnnouncer" class="sr-only" aria-live="assertive"></div>
 
     <footer class="footer">
-      <span>Static browser simulation · Unaffiliated portfolio demo · <a href="notices.html">Third-Party Photo Credits &amp; Licenses</a></span>
-      <span>Built by <a href="https://github.com/erturkeryavuz" target="_blank" rel="noopener noreferrer">Ertürk Eryavuz</a></span>
+      <div class="footer-links">
+        <a href="https://erturkeryavuz.netlify.app/" target="_blank" rel="noopener noreferrer">← Back to Portfolio</a>
+        <span class="footer-sep" aria-hidden="true">·</span>
+        <a href="notices.html">Photo Credits &amp; Licenses</a>
+        <span class="footer-sep" aria-hidden="true">·</span>
+        <a href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">Public Demo Repo</a>
+      </div>
+      <div class="footer-meta">
+        <span>Unaffiliated portfolio showcase · Built by <a href="https://github.com/erturkeryavuz" target="_blank" rel="noopener noreferrer">Ertürk Eryavuz</a></span>
+      </div>
     </footer>
   </main>
 
