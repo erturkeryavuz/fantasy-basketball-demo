@@ -390,6 +390,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   gap: 12px;
   position: sticky;
   top: 78px;
+  scroll-margin-top: 84px;
 }
 
 .phone-bezel {
@@ -1679,6 +1680,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   display: flex;
   flex-direction: column;
   gap: 11px;
+  scroll-margin-top: 84px;
+}
+
+.inspector-shell {
+  scroll-margin-top: 84px;
 }
 
 .tutorial-dock[hidden] {
@@ -1788,13 +1794,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 @media (max-width: 640px) {
   .tutorial-dock {
-    padding: 14px 15px;
+    margin: 0 0 14px;
+    padding: 11px 13px;
+    gap: 8px;
+  }
+  .tutorial-dock-top {
+    gap: 8px;
+  }
+  .tutorial-stage-title {
+    font-size: 0.88rem;
+  }
+  .tutorial-narration {
+    font-size: 0.8rem;
+    line-height: 1.42;
   }
   .tutorial-controls {
     width: 100%;
+    gap: 5px;
   }
   .tutorial-btn {
     flex: 1 1 auto;
+    padding: 5px 8px;
+    font-size: 0.74rem;
     text-align: center;
     justify-content: center;
   }

@@ -670,6 +670,386 @@ class FantasyBasketballTutorialTests(unittest.TestCase):
         self.assertIsNone(mp["manualResetPostWait"]["lastOpenedPlayerName"])
         self.assertEqual(mp["timersAtEnd"], 0)
 
+    def test_viewport_visibility_and_scroll_behavior(self):
+        viewport_harness = r"""
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const docsDir = process.argv[1];
+const mode = process.argv[2]; // "desktop" | "mobile" | "reduce" | "short"
+const reduceMotionFlag = mode === "reduce";
+
+let nowMs = 0;
+let nextTimerId = 1;
+const timers = new Map();
+const scrollCalls = [];
+const focusCalls = [];
+const winListeners = new Map();
+let deferSmoothScroll = false;
+
+const layouts = {
+  desktop: {
+    innerWidth: 1440,
+    innerHeight: 900,
+    topbarSticky: true,
+    topbarHeight: 66,
+    dockDocTop: 390,
+    dockHeight: 110,
+    phoneDocTop: 522,
+    phoneHeight: 780,
+    inspectorDocTop: 522,
+    inspectorHeight: 300,
+  },
+  mobile: {
+    innerWidth: 390,
+    innerHeight: 844,
+    topbarSticky: false,
+    topbarHeight: 196,
+    dockDocTop: 792,
+    dockHeight: 190,
+    phoneDocTop: 996,
+    phoneHeight: 700,
+    inspectorDocTop: 1760,
+    inspectorHeight: 460,
+  },
+};
+const cfg = mode === "short"
+  ? { ...layouts.mobile, innerWidth: 320, innerHeight: 480, dockHeight: 235, phoneDocTop: 1041 }
+  : mode === "mobile" ? layouts.mobile : layouts.desktop;
+
+globalThis.window = globalThis;
+window.innerWidth = cfg.innerWidth;
+window.innerHeight = cfg.innerHeight;
+window.scrollY = 0;
+window.scrollTo = (opts) => {
+  const top = typeof opts === "number" ? opts : Number(opts?.top || 0);
+  const behavior = typeof opts === "object" && opts ? opts.behavior : "auto";
+  scrollCalls.push({ top, behavior, fromY: window.scrollY });
+  if (deferSmoothScroll && behavior === "smooth") return;
+  window.scrollY = Math.max(0, top);
+  for (const fn of winListeners.get("scroll") || []) fn({});
+};
+window.addEventListener = (type, fn) => {
+  if (!winListeners.has(type)) winListeners.set(type, []);
+  winListeners.get(type).push(fn);
+};
+window.getComputedStyle = (el) => {
+  if (el?.selector === ".topbar") return { position: cfg.topbarSticky ? "sticky" : "static" };
+  return { overflowX: cfg.topbarSticky ? "clip" : "hidden" };
+};
+window.setTimeout = (fn, delay = 0) => {
+  const id = nextTimerId++;
+  timers.set(id, { id, fn, runAt: nowMs + Math.max(0, Number(delay) || 0) });
+  return id;
+};
+window.clearTimeout = (id) => timers.delete(id);
+window.requestAnimationFrame = (fn) => { fn(); return 1; };
+window.matchMedia = (q) => ({
+  matches: q.includes("prefers-reduced-motion") ? reduceMotionFlag : false,
+  media: q,
+});
+
+function advanceTimers(ms) {
+  const target = nowMs + ms;
+  while (true) {
+    let earliest = null;
+    for (const t of timers.values()) {
+      if (t.runAt <= target && (!earliest || t.runAt < earliest.runAt || (t.runAt === earliest.runAt && t.id < earliest.id))) {
+        earliest = t;
+      }
+    }
+    if (!earliest) break;
+    timers.delete(earliest.id);
+    nowMs = earliest.runAt;
+    earliest.fn();
+  }
+  nowMs = target;
+}
+
+class FakeEl {
+  constructor(tag, id = "", attrs = {}, rectFn = null) {
+    this.tagName = tag.toUpperCase();
+    this.id = id;
+    this.selector = attrs.selector || "";
+    this.attrs = { ...attrs };
+    this.dataset = {};
+    this.hidden = Boolean(attrs.hidden);
+    this.disabled = false;
+    this.textContent = "";
+    this.innerHTML = "";
+    this.style = {};
+    this.listeners = new Map();
+    this._rectFn = rectFn;
+    this._classes = new Set((attrs.class || "").split(/\s+/).filter(Boolean));
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k.startsWith("data-")) {
+        this.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
+      }
+    }
+    this.classList = {
+      add: (c) => this._classes.add(c),
+      remove: (c) => this._classes.delete(c),
+      toggle: (c, f) => (f ? this._classes.add(c) : this._classes.delete(c)),
+      contains: (c) => this._classes.has(c),
+    };
+  }
+  getBoundingClientRect() {
+    if (this._rectFn) return this._rectFn();
+    return { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
+  }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  addEventListener(type, fn) {
+    if (!this.listeners.has(type)) this.listeners.set(type, []);
+    this.listeners.get(type).push(fn);
+  }
+  click() {
+    if (this.disabled) return;
+    for (const fn of this.listeners.get("click") || []) fn({ target: this, preventDefault() {} });
+  }
+  focus(opts) {
+    document.activeElement = this;
+    focusCalls.push({ id: this.id, preventScroll: Boolean(opts?.preventScroll) });
+  }
+  contains() { return false; }
+  querySelectorAll() { return []; }
+}
+
+const byId = new Map();
+const mk = (tag, id, attrs = {}, rectFn = null) => {
+  const el = new FakeEl(tag, id, attrs, rectFn);
+  if (id) byId.set(id, el);
+  return el;
+};
+
+const topbar = new FakeEl("header", "", { selector: ".topbar" }, () => {
+  const top = cfg.topbarSticky ? 0 : -window.scrollY;
+  return { top, bottom: top + cfg.topbarHeight, height: cfg.topbarHeight };
+});
+const phoneBezel = new FakeEl("div", "", { selector: ".phone-bezel" }, () => {
+  const top = cfg.phoneDocTop - window.scrollY;
+  return { top, bottom: top + cfg.phoneHeight, height: cfg.phoneHeight };
+});
+const inspectorShell = new FakeEl("section", "", { selector: ".inspector-shell" }, () => {
+  const top = cfg.inspectorDocTop - window.scrollY;
+  return { top, bottom: top + cfg.inspectorHeight, height: cfg.inspectorHeight };
+});
+const tutorialControls = new FakeEl("div", "", { selector: ".tutorial-controls" }, () => {
+  const top = cfg.dockDocTop + 76 - window.scrollY;
+  return { top, bottom: top + 55, height: 55 };
+});
+
+mk("section", "tutorialDock", { hidden: true }, () => {
+  const top = cfg.dockDocTop - window.scrollY;
+  return { top, bottom: top + cfg.dockHeight, height: cfg.dockHeight };
+});
+
+for (const [tag, id, attrs] of [
+  ["div", "phoneBody", {}],
+  ["div", "iosStatusbar", {}],
+  ["div", "homeIndicator", {}],
+  ["div", "panelTrace", {}],
+  ["div", "panelLeague", { hidden: true }],
+  ["div", "panelArch", { hidden: true }],
+  ["div", "srAnnouncer", {}],
+  ["button", "btnAddCredits", {}],
+  ["button", "btnResetDemo", {}],
+  ["button", "btnWatchTutorial", {}],
+  ["span", "tutorialStepBadge", {}],
+  ["span", "tutorialStateBadge", {}],
+  ["h2", "tutorialStageTitle", {}],
+  ["div", "tutorialProgress", {}],
+  ["div", "tutorialProgressFill", {}],
+  ["p", "tutorialNarration", {}],
+  ["button", "btnTutPrev", {}],
+  ["button", "btnTutPlayPause", {}],
+  ["button", "btnTutNext", {}],
+  ["button", "btnTutRestart", {}],
+  ["button", "btnTutExit", {}],
+  ["button", "btnBuyPack", {}],
+]) {
+  mk(tag, id, attrs);
+}
+
+const tourPills = ["welcome", "home", "market", "pack-diamond", "my-cards", "players", "player-card", "teams"].map(
+  (k) => new FakeEl("button", "", { class: "tour-pill", "data-tour": k })
+);
+const inspectorTabs = ["trace", "league", "arch"].map(
+  (k) => new FakeEl("button", `tab_${k}`, { class: "inspector-tab", "data-inspector": k })
+);
+
+globalThis.document = {
+  activeElement: null,
+  documentElement: { clientHeight: cfg.innerHeight },
+  body: {},
+  getElementById: (id) => byId.get(id) || null,
+  querySelector: (sel) => {
+    if (sel === ".topbar") return topbar;
+    if (sel === ".phone-bezel") return phoneBezel;
+    if (sel === ".inspector-shell") return inspectorShell;
+    if (sel === ".tutorial-controls") return tutorialControls;
+    return null;
+  },
+  querySelectorAll: (sel) => {
+    if (sel === ".tour-pill") return tourPills;
+    if (sel === ".inspector-tab") return inspectorTabs;
+    return [];
+  },
+  addEventListener: () => {},
+};
+
+await import(pathToFileURL(path.join(docsDir, "app.js")).href);
+const api = window.__FB_TUTORIAL__;
+
+// 1. Start Watch Tutorial from scrollY=0
+byId.get("btnWatchTutorial").click();
+const afterStartY = window.scrollY;
+const startScrollCalls = scrollCalls.length;
+const startBehavior = scrollCalls[0]?.behavior || null;
+const startFocus = focusCalls[focusCalls.length - 1];
+const dockTopAfterStart = byId.get("tutorialDock").getBoundingClientRect().top;
+const phoneRectAfterStart = phoneBezel.getBoundingClientRect();
+const controlsRectAfterStart = tutorialControls.getBoundingClientRect();
+
+if (mode === "short") {
+  console.log(JSON.stringify({ controlsRectAfterStart, phoneRectAfterStart }));
+  process.exit(0);
+}
+
+// 2. Advance 2 auto stages (must NOT emit redundant scroll jumps while already visible)
+advanceTimers(8000);
+const scrollCallsAfterTwoStages = scrollCalls.length;
+
+// 3. Simulate deliberate user scroll away to top (scrollY = 0), then advance automatically
+window.scrollY = 0;
+for (const fn of winListeners.get("scroll") || []) fn({});
+const userScrolledFlag = api.getState().userScrolledAway;
+const callsBeforeAutoAfterUserScroll = scrollCalls.length;
+advanceTimers(5000);
+const yAfterAutoWithUserScroll = window.scrollY;
+const callsAfterAutoWithUserScroll = scrollCalls.length;
+
+// 4. Pause & Resume must NOT unexpectedly jump scrollY
+byId.get("btnTutPlayPause").click(); // Pause
+const yAfterPause = window.scrollY;
+byId.get("btnTutPlayPause").click(); // Resume
+const yAfterResume = window.scrollY;
+
+// 5. Restart resets userScrolledAway and repositions consistently with Watch Tutorial start
+byId.get("btnTutRestart").click();
+const yAfterRestart = window.scrollY;
+const userScrolledAfterRestart = api.getState().userScrolledAway;
+
+// 6. Step to Stage 9 (inspector) via Next and verify Inspector visibility
+for (let i = 0; i < 8; i++) byId.get("btnTutNext").click();
+const stageAtInspector = api.getState().stageId;
+const yAtInspector = window.scrollY;
+const inspectorTopAtStage9 = inspectorShell.getBoundingClientRect().top;
+
+// 7. Step Next to Stage 10 (finish) -> returns to dock+phone if stacked
+byId.get("btnTutNext").click();
+const yAtFinish = window.scrollY;
+
+// 8. Exit leaves scrollY untouched and focuses btnWatchTutorial with preventScroll
+const yBeforeExit = window.scrollY;
+byId.get("btnTutExit").click();
+const yAfterExit = window.scrollY;
+const exitFocus = focusCalls[focusCalls.length - 1];
+
+// Exit while the browser is still animating the first scroll.
+window.scrollY = 0;
+deferSmoothScroll = true;
+byId.get("btnWatchTutorial").click();
+window.scrollY = 100;
+byId.get("btnTutExit").click();
+const interruptedScroll = scrollCalls.at(-1);
+
+console.log(JSON.stringify({
+  afterStartY,
+  startScrollCalls,
+  startBehavior,
+  startFocus,
+  dockTopAfterStart,
+  phoneRectAfterStart,
+  scrollCallsAfterTwoStages,
+  userScrolledFlag,
+  callsBeforeAutoAfterUserScroll,
+  callsAfterAutoWithUserScroll,
+  yAfterAutoWithUserScroll,
+  yAfterPause,
+  yAfterResume,
+  yAfterRestart,
+  userScrolledAfterRestart,
+  stageAtInspector,
+  yAtInspector,
+  inspectorTopAtStage9,
+  yAtFinish,
+  yBeforeExit,
+  yAfterExit,
+  exitFocus,
+  interruptedScroll,
+}));
+"""
+        for mode in ("desktop", "mobile", "reduce", "short"):
+            proc = subprocess.run(
+                ["node", "--input-type=module", "-e", viewport_harness, str(DOCS), mode],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, f"Viewport harness ({mode}) failed:\n{proc.stderr}")
+            res = json.loads(proc.stdout)
+
+            if mode == "short":
+                self.assertGreaterEqual(res["controlsRectAfterStart"]["top"], 0)
+                self.assertLessEqual(res["controlsRectAfterStart"]["bottom"], 480)
+                self.assertGreaterEqual(480 - res["phoneRectAfterStart"]["top"], 280)
+                continue
+
+            # Start Watch Tutorial repositions viewport & passes preventScroll focus
+            self.assertGreater(res["afterStartY"], 250, f"Expected initial guided scroll in {mode}")
+            self.assertEqual(res["startScrollCalls"], 1)
+            self.assertEqual(res["startBehavior"], "auto" if mode == "reduce" else "smooth")
+            self.assertEqual(res["startFocus"], {"id": "btnTutPlayPause", "preventScroll": True})
+
+            # Sticky topbar clearance respected on desktop; dock + phone positioned cleanly
+            if mode in ("desktop", "reduce"):
+                self.assertGreaterEqual(res["dockTopAfterStart"], 74)
+                self.assertLess(res["phoneRectAfterStart"]["top"], 250)
+            else:
+                self.assertGreaterEqual(res["dockTopAfterStart"], 8)
+                self.assertLess(res["phoneRectAfterStart"]["top"], 230)
+
+            # No repeated scroll jumps across stages while showcase is already visible
+            self.assertEqual(res["scrollCallsAfterTwoStages"], 1)
+
+            # Deliberate manual scroll is respected (auto-advance does NOT hijack scrollY back)
+            self.assertTrue(res["userScrolledFlag"])
+            self.assertEqual(res["callsAfterAutoWithUserScroll"], res["callsBeforeAutoAfterUserScroll"])
+            self.assertEqual(res["yAfterAutoWithUserScroll"], 0)
+
+            # Pause and Resume do not unexpectedly jump scrollY
+            self.assertEqual(res["yAfterPause"], 0)
+            self.assertEqual(res["yAfterResume"], 0)
+
+            # Restart matches initial Watch Tutorial start consistently
+            self.assertEqual(res["yAfterRestart"], res["afterStartY"])
+            self.assertFalse(res["userScrolledAfterRestart"])
+
+            # Inspector stage visibility (desktop stays put with zero jump; mobile scrolls to inspector & returns at finish)
+            self.assertEqual(res["stageAtInspector"], "inspector")
+            if mode == "mobile":
+                self.assertGreater(res["yAtInspector"], res["yAfterRestart"] + 500)
+                self.assertLessEqual(res["inspectorTopAtStage9"], 40)
+                self.assertEqual(res["yAtFinish"], res["afterStartY"])
+            else:
+                self.assertEqual(res["yAtInspector"], res["yAfterRestart"])
+
+            # Exit leaves scrollY free and restores focus with preventScroll
+            self.assertEqual(res["yAfterExit"], res["yBeforeExit"])
+            self.assertEqual(res["exitFocus"], {"id": "btnWatchTutorial", "preventScroll": True})
+            if mode != "reduce":
+                self.assertEqual(res["interruptedScroll"], {"top": 100, "behavior": "instant", "fromY": 100})
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

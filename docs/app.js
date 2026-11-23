@@ -1457,7 +1457,16 @@ const tutorial = {
   runId: 0,
   stageTimer: null,
   subTimer: null,
+  userScrolledAway: false,
+  lastGuidedScrollY: null,
+  scrollStartY: null,
+  programmaticScrollUntil: 0,
 };
+
+const topbarEl = document.querySelector?.(".topbar") || null;
+const phoneBezelEl = document.querySelector?.(".phone-bezel") || null;
+const inspectorShellEl = document.querySelector?.(".inspector-shell") || null;
+const tutorialControlsEl = document.querySelector?.(".tutorial-controls") || null;
 
 const btnWatchTutorial = document.getElementById("btnWatchTutorial");
 const tutorialDock = document.getElementById("tutorialDock");
@@ -1472,6 +1481,165 @@ const btnTutPlayPause = document.getElementById("btnTutPlayPause");
 const btnTutNext = document.getElementById("btnTutNext");
 const btnTutRestart = document.getElementById("btnTutRestart");
 const btnTutExit = document.getElementById("btnTutExit");
+
+function getCurrentScrollY() {
+  return Number(window.scrollY ?? window.pageYOffset ?? 0);
+}
+
+function getViewportHeight() {
+  return Number(window.innerHeight || document.documentElement?.clientHeight || 0);
+}
+
+function getStickyHeaderClearance() {
+  const defaultPad = (window.innerWidth || 1200) <= 640 ? 10 : 12;
+  if (!topbarEl || typeof topbarEl.getBoundingClientRect !== "function") {
+    return defaultPad;
+  }
+  const rect = topbarEl.getBoundingClientRect();
+  if (getCurrentScrollY() > 4) {
+    return rect.top >= -2 && rect.bottom > 0 ? Math.ceil(rect.bottom) + 10 : defaultPad;
+  }
+  if (typeof window.getComputedStyle === "function") {
+    const pos = window.getComputedStyle(topbarEl).position;
+    if (pos === "fixed") return Math.ceil(rect.height) + 10;
+    if (pos === "sticky") {
+      const htmlOverflowX = document.documentElement ? window.getComputedStyle(document.documentElement).overflowX : "";
+      const bodyOverflowX = document.body ? window.getComputedStyle(document.body).overflowX : "";
+      if (htmlOverflowX !== "hidden" && bodyOverflowX !== "hidden") {
+        return Math.ceil(rect.height) + 10;
+      }
+    }
+  }
+  return defaultPad;
+}
+
+function getVisibleFraction(el, safeTop, vh) {
+  if (!el || typeof el.getBoundingClientRect !== "function" || vh <= 0) return 1;
+  const rect = el.getBoundingClientRect();
+  if (rect.height <= 0) return 1;
+  const visiblePx = Math.max(0, Math.min(vh, rect.bottom) - Math.max(safeTop, rect.top));
+  return visiblePx / rect.height;
+}
+
+function performGuidedScroll(targetY) {
+  if (typeof window.scrollTo !== "function") return;
+  const clampedTarget = Math.max(0, Math.round(targetY));
+  const currentY = getCurrentScrollY();
+  if (Math.abs(clampedTarget - currentY) < 4) {
+    tutorial.lastGuidedScrollY = Math.round(currentY);
+    return;
+  }
+  const reduceMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  tutorial.scrollStartY = currentY;
+  tutorial.lastGuidedScrollY = clampedTarget;
+  tutorial.programmaticScrollUntil = Date.now() + (reduceMotion ? 80 : 750);
+  window.scrollTo({
+    top: clampedTarget,
+    behavior: reduceMotion ? "auto" : "smooth",
+  });
+  if (Math.abs(getCurrentScrollY() - clampedTarget) <= 4) {
+    tutorial.programmaticScrollUntil = 0;
+  }
+}
+
+function ensureTutorialViewportVisible({ reason = "auto", stage = null } = {}) {
+  if (!tutorial.active) return;
+  if (typeof window.scrollTo !== "function") return;
+  if (reason === "auto" && tutorial.userScrolledAway) return;
+
+  const vh = getViewportHeight();
+  if (vh <= 0) return;
+  const safeTop = getStickyHeaderClearance();
+  const scrollY = getCurrentScrollY();
+
+  if (stage?.id === "inspector" && inspectorShellEl && typeof inspectorShellEl.getBoundingClientRect === "function") {
+    const inspRect = inspectorShellEl.getBoundingClientRect();
+    const inspVis = getVisibleFraction(inspectorShellEl, safeTop, vh);
+    if (inspRect.top >= safeTop - 4 && inspVis >= 0.7) {
+      return;
+    }
+    performGuidedScroll(scrollY + inspRect.top - safeTop);
+    return;
+  }
+
+  if (!tutorialDock || typeof tutorialDock.getBoundingClientRect !== "function") return;
+  const dockRect = tutorialDock.getBoundingClientRect();
+  const phoneRect = phoneBezelEl && typeof phoneBezelEl.getBoundingClientRect === "function"
+    ? phoneBezelEl.getBoundingClientRect()
+    : null;
+
+  const dockVisible = dockRect.top >= safeTop - 4 && dockRect.bottom <= vh;
+  const phoneVis = phoneRect ? getVisibleFraction(phoneBezelEl, safeTop, vh) : 1;
+
+  if (reason !== "start" && dockVisible && phoneVis >= 0.72) {
+    return;
+  }
+
+  let targetY = Math.max(0, scrollY + dockRect.top - safeTop);
+
+  // On short viewports, make room for the phone while keeping playback reachable.
+  if (phoneRect && phoneRect.height > 0) {
+    const projectedPhoneTop = scrollY + phoneRect.top - targetY;
+    const projectedVisible = Math.max(
+      0,
+      Math.min(vh, projectedPhoneTop + phoneRect.height) - Math.max(safeTop, projectedPhoneTop),
+    );
+    if (projectedVisible / phoneRect.height < 0.55) {
+      const controlsRect = tutorialControlsEl?.getBoundingClientRect();
+      const anchorTop = controlsRect && controlsRect.height < vh - safeTop
+        ? Math.min(controlsRect.top, phoneRect.top)
+        : phoneRect.top;
+      targetY = Math.max(0, scrollY + anchorTop - safeTop);
+    }
+  }
+
+  performGuidedScroll(targetY);
+}
+
+if (typeof window.addEventListener === "function") {
+  const markManualScrollIntent = (e) => {
+    if (!tutorial.active) return;
+    if (phoneBody && typeof phoneBody.contains === "function" && e?.target && phoneBody.contains(e.target)) {
+      return;
+    }
+    tutorial.programmaticScrollUntil = 0;
+  };
+  window.addEventListener("wheel", markManualScrollIntent, { passive: true });
+  window.addEventListener("touchmove", markManualScrollIntent, { passive: true });
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!tutorial.active || tutorial.lastGuidedScrollY === null) return;
+      const curY = getCurrentScrollY();
+      const dist = Math.abs(curY - tutorial.lastGuidedScrollY);
+      if (Date.now() < tutorial.programmaticScrollUntil) {
+        if (dist <= 4) {
+          tutorial.programmaticScrollUntil = 0;
+          return;
+        }
+        if (tutorial.scrollStartY !== null) {
+          const intendedDelta = tutorial.lastGuidedScrollY - tutorial.scrollStartY;
+          const movedWrongWay =
+            (intendedDelta > 0 && curY < tutorial.scrollStartY - 24) ||
+            (intendedDelta < 0 && curY > tutorial.scrollStartY + 24);
+          const overshot =
+            (intendedDelta > 0 && curY > tutorial.lastGuidedScrollY + 40) ||
+            (intendedDelta < 0 && curY < tutorial.lastGuidedScrollY - 40);
+          if (movedWrongWay || overshot) {
+            tutorial.programmaticScrollUntil = 0;
+            tutorial.userScrolledAway = true;
+          }
+        }
+        return;
+      }
+      if (dist > 28) {
+        tutorial.userScrolledAway = true;
+      }
+    },
+    { passive: true },
+  );
+}
 
 function clearTutorialTimers() {
   if (tutorial.stageTimer !== null) {
@@ -1551,7 +1719,7 @@ function scheduleCurrentStage(runId) {
   }
 }
 
-function goToTutorialStage(index, { autoPlay = tutorial.playing } = {}) {
+function goToTutorialStage(index, { autoPlay = tutorial.playing, scrollReason = "auto" } = {}) {
   clearTutorialTimers();
   if (pendingPackReveal !== null) {
     settlePendingPackReveal({ renderNow: false });
@@ -1571,6 +1739,7 @@ function goToTutorialStage(index, { autoPlay = tutorial.playing } = {}) {
   const stage = TUTORIAL_STAGES[clamped];
   stage.enter();
   updateTutorialUI();
+  ensureTutorialViewportVisible({ reason: scrollReason, stage });
   announce(`Tutorial stage ${clamped + 1} of ${TUTORIAL_STAGES.length}: ${stage.title}.`);
 
   if (!isLast && tutorial.playing) {
@@ -1582,8 +1751,12 @@ function startTutorial() {
   clearTutorialTimers();
   cancelPendingPackReveal();
   sessionVersion += 1;
+  tutorial.userScrolledAway = false;
+  tutorial.lastGuidedScrollY = null;
+  tutorial.scrollStartY = null;
+  tutorial.programmaticScrollUntil = 0;
   state = createInitialState();
-  goToTutorialStage(0, { autoPlay: true });
+  goToTutorialStage(0, { autoPlay: true, scrollReason: "start" });
 }
 
 function pauseTutorial({ silent = false } = {}) {
@@ -1616,6 +1789,9 @@ function resumeTutorial() {
 
 function exitTutorial({ silent = false } = {}) {
   if (!tutorial.active && tutorial.stageTimer === null && tutorial.subTimer === null) return;
+  if (Date.now() < tutorial.programmaticScrollUntil) {
+    window.scrollTo({ top: getCurrentScrollY(), behavior: "instant" });
+  }
   clearTutorialTimers();
   settlePendingPackReveal({ renderNow: true });
   tutorial.runId += 1;
@@ -1623,17 +1799,21 @@ function exitTutorial({ silent = false } = {}) {
   tutorial.playing = false;
   tutorial.subActionDone = false;
   tutorial.completed = false;
+  tutorial.userScrolledAway = false;
+  tutorial.lastGuidedScrollY = null;
+  tutorial.scrollStartY = null;
+  tutorial.programmaticScrollUntil = 0;
   updateTutorialUI();
   if (!silent) {
     announce("Exited guided tutorial. Exploring manually.");
-    btnWatchTutorial?.focus();
+    btnWatchTutorial?.focus({ preventScroll: true });
   }
 }
 
 // Persistent Topbar, Tutorial, Tour & Inspector Tab wiring
 btnWatchTutorial?.addEventListener("click", () => {
   startTutorial();
-  btnTutPlayPause?.focus();
+  btnTutPlayPause?.focus({ preventScroll: true });
 });
 
 btnTutPlayPause?.addEventListener("click", () => {
@@ -1648,12 +1828,12 @@ btnTutPlayPause?.addEventListener("click", () => {
 
 btnTutPrev?.addEventListener("click", () => {
   if (!tutorial.active || tutorial.stageIndex <= 0) return;
-  goToTutorialStage(tutorial.stageIndex - 1, { autoPlay: false });
+  goToTutorialStage(tutorial.stageIndex - 1, { autoPlay: false, scrollReason: "step" });
 });
 
 btnTutNext?.addEventListener("click", () => {
   if (!tutorial.active || tutorial.stageIndex >= TUTORIAL_STAGES.length - 1) return;
-  goToTutorialStage(tutorial.stageIndex + 1, { autoPlay: false });
+  goToTutorialStage(tutorial.stageIndex + 1, { autoPlay: false, scrollReason: "step" });
 });
 
 btnTutRestart?.addEventListener("click", () => {
@@ -1739,6 +1919,8 @@ window.__FB_TUTORIAL__ = {
     stageIndex: tutorial.stageIndex,
     stageId: TUTORIAL_STAGES[tutorial.stageIndex]?.id || null,
     subActionDone: tutorial.subActionDone,
+    userScrolledAway: tutorial.userScrolledAway,
+    lastGuidedScrollY: tutorial.lastGuidedScrollY,
     totalStages: TUTORIAL_STAGES.length,
     hasPendingTimers: tutorial.stageTimer !== null || tutorial.subTimer !== null || pendingPackReveal !== null,
     hasPendingPackReveal: pendingPackReveal !== null,
