@@ -162,6 +162,25 @@ function createInitialState() {
 }
 
 let state = createInitialState();
+let sessionVersion = 0;
+let pendingPackReveal = null;
+
+function cancelPendingPackReveal() {
+  if (pendingPackReveal !== null) {
+    window.clearTimeout(pendingPackReveal.timer);
+    pendingPackReveal = null;
+  }
+}
+
+function settlePendingPackReveal({ renderNow = true } = {}) {
+  if (pendingPackReveal === null) return false;
+  const pending = pendingPackReveal;
+  window.clearTimeout(pending.timer);
+  pendingPackReveal = null;
+  if (pending.sessionVersion !== sessionVersion) return false;
+  pending.complete({ renderNow });
+  return true;
+}
 
 const phoneBody = document.getElementById("phoneBody");
 const iosStatusbar = document.getElementById("iosStatusbar");
@@ -247,6 +266,9 @@ function getFilteredPlayers() {
 }
 
 function navigate(screen, opts = {}) {
+  if (pendingPackReveal !== null) {
+    settlePendingPackReveal({ renderNow: false });
+  }
   requireDemoLoginIfNeeded(screen);
   if (opts.teamId !== undefined) state.selectedTeamId = opts.teamId;
   if (opts.playerId !== undefined) {
@@ -452,18 +474,26 @@ function handleOpenPack() {
 
   render();
 
-  const reveal = () => {
+  const openSessionVersion = sessionVersion;
+  const completeReveal = ({ renderNow = true } = {}) => {
+    if (openSessionVersion !== sessionVersion) return;
+    state.packSpinning = false;
     state.lastOpenedPlayer = pulled;
     state.packOpenedDone = true;
     announce(`Opened ${pack.name}: pulled ${pulled.name}, ${pulled.overall_rating} overall, ${pulled.rarity}. Updated coins: ${state.credits}.`);
-    render();
+    if (renderNow) render();
   };
 
+  cancelPendingPackReveal();
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduceMotion) {
-    reveal();
+    completeReveal({ renderNow: true });
   } else {
-    window.setTimeout(reveal, 780);
+    const timer = window.setTimeout(() => {
+      pendingPackReveal = null;
+      completeReveal({ renderNow: true });
+    }, 780);
+    pendingPackReveal = { timer, sessionVersion: openSessionVersion, complete: completeReveal };
   }
 }
 
@@ -1246,9 +1276,408 @@ function bindDynamicEvents() {
   });
 }
 
-// Persistent Topbar, Tour & Inspector Tab wiring
+// ==================== OPTIONAL GUIDED TUTORIAL CONTROLLER ====================
+// Drives the actual existing SwiftUI screens, filters, 3D card flip, pack opening,
+// and Engineering Inspector without replacing or degrading the 8-pill manual tour.
+// Policy: clicking any manual .tour-pill or Reset Session exits tutorial mode cleanly;
+// interacting directly with the phone or inspector tabs pauses auto-advance cleanly.
+
+const TUTORIAL_STAGES = [
+  {
+    id: "welcome",
+    title: "Welcome & Project Identity",
+    tourKey: "welcome",
+    durationMs: 3600,
+    narration: "Fantasy Basketball pairs a native SwiftUI iOS client with a Django REST Framework backend. Watch each real demo screen and synchronized API trace step by step.",
+    enter() {
+      state.isLoggedIn = false;
+      state.token = null;
+      state.inspectorTab = "trace";
+      state.screen = "welcome";
+      render();
+    },
+  },
+  {
+    id: "auth",
+    title: "Simulated Token Authentication",
+    tourKey: "welcome",
+    durationMs: 3600,
+    narration: "LoginView authenticates against Django's token endpoint and stores a session token in the client — simulated safely in the browser with zero live credentials.",
+    enter() {
+      state.isLoggedIn = false;
+      state.token = null;
+      state.inspectorTab = "trace";
+      navigate("login");
+    },
+  },
+  {
+    id: "home-teams",
+    title: "Home Navigation & Club Rosters",
+    tourKey: "teams",
+    durationMs: 4400,
+    subDelayMs: 1800,
+    narration: "After demo login, HomeView opens the pure NavigationStack hub and drills into TeamsView showing all four clubs with original geometric monogram badges.",
+    enter() {
+      state.inspectorTab = "trace";
+      navigate("home");
+    },
+    subAction() {
+      navigate("teams");
+    },
+  },
+  {
+    id: "players-filter",
+    title: "Player Directory & Live Filters",
+    tourKey: "players",
+    durationMs: 4400,
+    subDelayMs: 1700,
+    narration: "PlayersView renders all 8 players with four instant client-side filters. Applying Position = Guard and Min OVR = 90 narrows the grid immediately.",
+    enter() {
+      state.inspectorTab = "trace";
+      state.filters = { position: "All", country: "All", team: "All", minRating: 0 };
+      navigate("players");
+    },
+    subAction() {
+      state.filters = { position: "Guard", country: "All", team: "All", minRating: 90 };
+      const filtered = getFilteredPlayers();
+      recordTrace({
+        method: "GET",
+        endpoint: "/api/players/",
+        status: 200,
+        swiftView: "PlayersView.swift (filteredPlayers)",
+        djangoView: "Client-side SwiftUI filter over /api/players/",
+        permission: "IsAdminOrReadOnly",
+        request: null,
+        response: { matching: filtered.length, filters: { ...state.filters } },
+        note: "Tutorial applied Position = Guard and Min OVR = 90 filter.",
+      });
+      render();
+    },
+  },
+  {
+    id: "player-flip",
+    title: "3D Flippable Collectible Card",
+    tourKey: "player-card",
+    durationMs: 4400,
+    subDelayMs: 1700,
+    narration: "PlayerDetailView displays rarity-styled cards with diagonal shine for high tiers and flips 180° on tap to reveal Best Skill and physical attributes.",
+    enter() {
+      state.inspectorTab = "trace";
+      navigate("player-detail", { playerId: PLAYERS[0].id, from: "players" });
+    },
+    subAction() {
+      state.isCardFlipped = true;
+      render();
+    },
+  },
+  {
+    id: "pack-market",
+    title: "PackMarket Tiers & Credits",
+    tourKey: "market",
+    durationMs: 3600,
+    narration: "PackMarket lists Gold (500), Amethyst (800), and Diamond (1,000) packs alongside the player's current coin balance.",
+    enter() {
+      state.inspectorTab = "trace";
+      if (state.credits < 1000) state.credits = STARTING_CREDITS;
+      navigate("market");
+    },
+  },
+  {
+    id: "pack-open",
+    title: "Atomic Pack Opening Simulation",
+    tourKey: "pack-diamond",
+    durationMs: 4600,
+    subDelayMs: 1100,
+    narration: "Opening the Diamond Pack runs the 360° spinner, deducts credits atomically via POST /api/open-pack/, records the trace, and reveals the pulled card.",
+    enter() {
+      state.inspectorTab = "trace";
+      if (state.credits < 1000) state.credits = STARTING_CREDITS;
+      navigate("pack-detail", { packId: "diamond" });
+    },
+    subAction() {
+      if (!state.packOpenedDone && !state.packSpinning) {
+        handleOpenPack();
+      }
+    },
+  },
+  {
+    id: "my-cards",
+    title: "My Cards Collection",
+    tourKey: "my-cards",
+    durationMs: 3600,
+    narration: "MyCardsView loads owned UserCard entries from /api/my-cards/, immediately showing the newly opened card in the personal collection.",
+    enter() {
+      state.inspectorTab = "trace";
+      if (state.myCards.length === 0) {
+        state.myCards.unshift({
+          id: Date.now() + Math.random(),
+          player: PLAYERS[0],
+          acquired_at: new Date().toISOString(),
+        });
+      }
+      navigate("my-cards");
+    },
+  },
+  {
+    id: "inspector",
+    title: "Engineering Inspector & Backend League Engine",
+    tourKey: "my-cards",
+    durationMs: 4400,
+    subDelayMs: 1900,
+    narration: "The right-hand inspector records live Django REST serializer traces and documents backend-only league endpoints (not wired into the SwiftUI screens).",
+    enter() {
+      state.inspectorTab = "trace";
+      render();
+    },
+    subAction() {
+      state.inspectorTab = "league";
+      render();
+    },
+  },
+  {
+    id: "finish",
+    title: "Tutorial Complete — Explore Manually",
+    tourKey: "home",
+    durationMs: 0,
+    narration: "Guided walkthrough complete. Replay the tutorial anytime, or exit to explore every SwiftUI screen, filter, pack tier, and API trace manually.",
+    enter() {
+      state.inspectorTab = "trace";
+      state.filters = { position: "All", country: "All", team: "All", minRating: 0 };
+      navigate("home");
+    },
+  },
+];
+
+const tutorial = {
+  active: false,
+  playing: false,
+  completed: false,
+  stageIndex: 0,
+  subActionDone: false,
+  runId: 0,
+  stageTimer: null,
+  subTimer: null,
+};
+
+const btnWatchTutorial = document.getElementById("btnWatchTutorial");
+const tutorialDock = document.getElementById("tutorialDock");
+const tutorialStepBadge = document.getElementById("tutorialStepBadge");
+const tutorialStateBadge = document.getElementById("tutorialStateBadge");
+const tutorialStageTitle = document.getElementById("tutorialStageTitle");
+const tutorialProgress = document.getElementById("tutorialProgress");
+const tutorialProgressFill = document.getElementById("tutorialProgressFill");
+const tutorialNarration = document.getElementById("tutorialNarration");
+const btnTutPrev = document.getElementById("btnTutPrev");
+const btnTutPlayPause = document.getElementById("btnTutPlayPause");
+const btnTutNext = document.getElementById("btnTutNext");
+const btnTutRestart = document.getElementById("btnTutRestart");
+const btnTutExit = document.getElementById("btnTutExit");
+
+function clearTutorialTimers() {
+  if (tutorial.stageTimer !== null) {
+    window.clearTimeout(tutorial.stageTimer);
+    tutorial.stageTimer = null;
+  }
+  if (tutorial.subTimer !== null) {
+    window.clearTimeout(tutorial.subTimer);
+    tutorial.subTimer = null;
+  }
+}
+
+function updateTutorialUI() {
+  if (!tutorialDock) return;
+  tutorialDock.hidden = !tutorial.active;
+  if (btnWatchTutorial) {
+    btnWatchTutorial.setAttribute("aria-expanded", String(tutorial.active));
+  }
+  if (!tutorial.active) return;
+
+  const total = TUTORIAL_STAGES.length;
+  const stage = TUTORIAL_STAGES[tutorial.stageIndex];
+  const stepNum = tutorial.stageIndex + 1;
+  const pct = Math.round((stepNum / total) * 100);
+
+  tutorialStepBadge.textContent = `Stage ${stepNum} / ${total}`;
+  tutorialStageTitle.textContent = stage.title;
+  tutorialNarration.textContent = stage.narration;
+
+  if (tutorial.completed) {
+    tutorialStateBadge.textContent = "Complete";
+    tutorialStateBadge.dataset.state = "complete";
+    btnTutPlayPause.textContent = "Replay";
+    btnTutPlayPause.setAttribute("aria-pressed", "false");
+  } else if (tutorial.playing) {
+    tutorialStateBadge.textContent = "Playing";
+    tutorialStateBadge.dataset.state = "playing";
+    btnTutPlayPause.textContent = "Pause";
+    btnTutPlayPause.setAttribute("aria-pressed", "true");
+  } else {
+    tutorialStateBadge.textContent = "Paused";
+    tutorialStateBadge.dataset.state = "paused";
+    btnTutPlayPause.textContent = "Play";
+    btnTutPlayPause.setAttribute("aria-pressed", "false");
+  }
+
+  tutorialProgress.setAttribute("aria-valuenow", String(stepNum));
+  tutorialProgress.setAttribute("aria-valuemax", String(total));
+  tutorialProgressFill.style.width = `${pct}%`;
+
+  btnTutPrev.disabled = tutorial.stageIndex === 0;
+  btnTutNext.disabled = tutorial.stageIndex === total - 1;
+}
+
+function scheduleCurrentStage(runId) {
+  if (!tutorial.active || !tutorial.playing) return;
+  const stage = TUTORIAL_STAGES[tutorial.stageIndex];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (typeof stage.subAction === "function" && !tutorial.subActionDone) {
+    const subWait = reduceMotion ? 220 : (stage.subDelayMs || 1500);
+    tutorial.subTimer = window.setTimeout(() => {
+      tutorial.subTimer = null;
+      if (!tutorial.active || !tutorial.playing || tutorial.runId !== runId || tutorial.subActionDone) return;
+      tutorial.subActionDone = true;
+      stage.subAction();
+    }, subWait);
+  }
+
+  if (tutorial.stageIndex < TUTORIAL_STAGES.length - 1) {
+    const waitMs = reduceMotion ? Math.max(1800, Math.round(stage.durationMs * 0.7)) : stage.durationMs;
+    tutorial.stageTimer = window.setTimeout(() => {
+      tutorial.stageTimer = null;
+      if (!tutorial.active || !tutorial.playing || tutorial.runId !== runId) return;
+      goToTutorialStage(tutorial.stageIndex + 1, { autoPlay: true });
+    }, waitMs);
+  }
+}
+
+function goToTutorialStage(index, { autoPlay = tutorial.playing } = {}) {
+  clearTutorialTimers();
+  if (pendingPackReveal !== null) {
+    settlePendingPackReveal({ renderNow: false });
+  }
+  tutorial.runId += 1;
+  const currentRunId = tutorial.runId;
+
+  const clamped = Math.max(0, Math.min(TUTORIAL_STAGES.length - 1, index));
+  const isLast = clamped === TUTORIAL_STAGES.length - 1;
+
+  tutorial.active = true;
+  tutorial.stageIndex = clamped;
+  tutorial.subActionDone = false;
+  tutorial.completed = isLast;
+  tutorial.playing = isLast ? false : Boolean(autoPlay);
+
+  const stage = TUTORIAL_STAGES[clamped];
+  stage.enter();
+  updateTutorialUI();
+  announce(`Tutorial stage ${clamped + 1} of ${TUTORIAL_STAGES.length}: ${stage.title}.`);
+
+  if (!isLast && tutorial.playing) {
+    scheduleCurrentStage(currentRunId);
+  }
+}
+
+function startTutorial() {
+  clearTutorialTimers();
+  cancelPendingPackReveal();
+  sessionVersion += 1;
+  state = createInitialState();
+  goToTutorialStage(0, { autoPlay: true });
+}
+
+function pauseTutorial({ silent = false } = {}) {
+  if (!tutorial.active || !tutorial.playing) return;
+  clearTutorialTimers();
+  settlePendingPackReveal({ renderNow: true });
+  tutorial.runId += 1;
+  tutorial.playing = false;
+  updateTutorialUI();
+  if (!silent) announce("Tutorial paused.");
+}
+
+function resumeTutorial() {
+  if (!tutorial.active) {
+    startTutorial();
+    return;
+  }
+  if (tutorial.completed || tutorial.stageIndex >= TUTORIAL_STAGES.length - 1) {
+    startTutorial();
+    return;
+  }
+  if (tutorial.playing) return;
+  clearTutorialTimers();
+  tutorial.runId += 1;
+  tutorial.playing = true;
+  updateTutorialUI();
+  announce("Tutorial resumed.");
+  scheduleCurrentStage(tutorial.runId);
+}
+
+function exitTutorial({ silent = false } = {}) {
+  if (!tutorial.active && tutorial.stageTimer === null && tutorial.subTimer === null) return;
+  clearTutorialTimers();
+  settlePendingPackReveal({ renderNow: true });
+  tutorial.runId += 1;
+  tutorial.active = false;
+  tutorial.playing = false;
+  tutorial.subActionDone = false;
+  tutorial.completed = false;
+  updateTutorialUI();
+  if (!silent) {
+    announce("Exited guided tutorial. Exploring manually.");
+    btnWatchTutorial?.focus();
+  }
+}
+
+// Persistent Topbar, Tutorial, Tour & Inspector Tab wiring
+btnWatchTutorial?.addEventListener("click", () => {
+  startTutorial();
+  btnTutPlayPause?.focus();
+});
+
+btnTutPlayPause?.addEventListener("click", () => {
+  if (tutorial.completed) {
+    startTutorial();
+  } else if (tutorial.playing) {
+    pauseTutorial();
+  } else {
+    resumeTutorial();
+  }
+});
+
+btnTutPrev?.addEventListener("click", () => {
+  if (!tutorial.active || tutorial.stageIndex <= 0) return;
+  goToTutorialStage(tutorial.stageIndex - 1, { autoPlay: false });
+});
+
+btnTutNext?.addEventListener("click", () => {
+  if (!tutorial.active || tutorial.stageIndex >= TUTORIAL_STAGES.length - 1) return;
+  goToTutorialStage(tutorial.stageIndex + 1, { autoPlay: false });
+});
+
+btnTutRestart?.addEventListener("click", () => {
+  startTutorial();
+});
+
+btnTutExit?.addEventListener("click", () => {
+  exitTutorial();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && tutorial.active) {
+    exitTutorial();
+  }
+});
+
+// Pause auto-advance safely if user interacts directly inside the phone frame
+phoneBody?.addEventListener("pointerdown", () => {
+  if (tutorial.active && tutorial.playing) pauseTutorial({ silent: true });
+});
+
 document.querySelectorAll(".tour-pill").forEach((pill) => {
   pill.addEventListener("click", () => {
+    if (tutorial.active) exitTutorial({ silent: true });
     const target = pill.dataset.tour;
     state.inspectorTab = "trace";
     if (target === "welcome") {
@@ -1269,12 +1698,14 @@ document.querySelectorAll(".tour-pill").forEach((pill) => {
 const inspectorTabs = Array.from(document.querySelectorAll(".inspector-tab"));
 inspectorTabs.forEach((tab, idx) => {
   tab.addEventListener("click", () => {
+    if (tutorial.active && tutorial.playing) pauseTutorial({ silent: true });
     state.inspectorTab = tab.dataset.inspector;
     render();
   });
   tab.addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
+      if (tutorial.active && tutorial.playing) pauseTutorial({ silent: true });
       const next = e.key === "ArrowRight" ? (idx + 1) % inspectorTabs.length : (idx - 1 + inspectorTabs.length) % inspectorTabs.length;
       state.inspectorTab = inspectorTabs[next].dataset.inspector;
       render();
@@ -1290,9 +1721,39 @@ document.getElementById("btnAddCredits").addEventListener("click", () => {
 });
 
 document.getElementById("btnResetDemo").addEventListener("click", () => {
+  cancelPendingPackReveal();
+  sessionVersion += 1;
+  if (tutorial.active) exitTutorial({ silent: true });
+  clearTutorialTimers();
   state = createInitialState();
   announce("Demo session reset to initial state.");
   render();
 });
+
+// Deterministic read-only inspection handle for automated browser verification
+window.__FB_TUTORIAL__ = {
+  getState: () => ({
+    active: tutorial.active,
+    playing: tutorial.playing,
+    completed: tutorial.completed,
+    stageIndex: tutorial.stageIndex,
+    stageId: TUTORIAL_STAGES[tutorial.stageIndex]?.id || null,
+    subActionDone: tutorial.subActionDone,
+    totalStages: TUTORIAL_STAGES.length,
+    hasPendingTimers: tutorial.stageTimer !== null || tutorial.subTimer !== null || pendingPackReveal !== null,
+    hasPendingPackReveal: pendingPackReveal !== null,
+    screen: state.screen,
+    inspectorTab: state.inspectorTab,
+    isCardFlipped: state.isCardFlipped,
+    credits: state.credits,
+    myCardsCount: state.myCards.length,
+    packSpinning: state.packSpinning,
+    packOpenedDone: state.packOpenedDone,
+    lastOpenedPlayerName: state.lastOpenedPlayer?.name || null,
+    filters: { ...state.filters },
+    filteredPlayersCount: getFilteredPlayers().length,
+  }),
+  stages: TUTORIAL_STAGES.map((s, idx) => ({ index: idx, id: s.id, title: s.title, tourKey: s.tourKey })),
+};
 
 render();

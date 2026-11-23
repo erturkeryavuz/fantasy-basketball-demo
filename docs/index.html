@@ -24,6 +24,9 @@
       </div>
 
       <div class="topbar-actions">
+        <button id="btnWatchTutorial" class="btn btn-tutorial" type="button" aria-controls="tutorialDock" aria-expanded="false">
+          ▶ Watch Tutorial
+        </button>
         <button id="btnAddCredits" class="btn" type="button" title="Add demo credits to test all three pack tiers">
           +1,000 Demo Credits
         </button>
@@ -57,6 +60,27 @@
       <button class="tour-pill" type="button" data-tour="player-card">7. Stephen Curry 3D Card</button>
       <button class="tour-pill" type="button" data-tour="teams">8. Teams</button>
     </nav>
+
+    <section id="tutorialDock" class="tutorial-dock" aria-label="Guided tutorial controls" hidden>
+      <div class="tutorial-dock-top">
+        <div class="tutorial-meta">
+          <span id="tutorialStepBadge" class="tutorial-step-badge">Stage 1 / 10</span>
+          <span id="tutorialStateBadge" class="tutorial-state-badge">Playing</span>
+          <h2 id="tutorialStageTitle" class="tutorial-stage-title">Welcome</h2>
+        </div>
+        <div class="tutorial-controls" role="group" aria-label="Tutorial playback controls">
+          <button id="btnTutPrev" class="btn btn-ghost tutorial-btn" type="button">← Previous</button>
+          <button id="btnTutPlayPause" class="btn btn-tutorial tutorial-btn" type="button" aria-pressed="true">Pause</button>
+          <button id="btnTutNext" class="btn btn-ghost tutorial-btn" type="button">Next →</button>
+          <button id="btnTutRestart" class="btn btn-ghost tutorial-btn" type="button">Restart</button>
+          <button id="btnTutExit" class="btn tutorial-btn" type="button">Exit / Explore Manually</button>
+        </div>
+      </div>
+      <div class="tutorial-progress-track" role="progressbar" id="tutorialProgress" aria-label="Tutorial progress" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1">
+        <div id="tutorialProgressFill" class="tutorial-progress-fill" style="width: 10%;"></div>
+      </div>
+      <p id="tutorialNarration" class="tutorial-narration" aria-live="polite"></p>
+    </section>
 
     <div class="workspace-grid">
       <!-- Left: Faithful iOS SwiftUI Phone Frame (pure NavigationStack, no invented bottom tab bar) -->
