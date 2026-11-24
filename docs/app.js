@@ -1448,6 +1448,8 @@ const TUTORIAL_STAGES = [
   },
 ];
 
+const MIN_TUTORIAL_PHONE_SCALE = 0.68;
+
 const tutorial = {
   active: false,
   playing: false,
@@ -1461,9 +1463,16 @@ const tutorial = {
   lastGuidedScrollY: null,
   scrollStartY: null,
   programmaticScrollUntil: 0,
+  resizeIgnoreScrollUntil: 0,
+  lastViewportW: null,
+  lastViewportH: null,
+  resizeRafId: null,
+  resizeSettleTimer: null,
+  phoneScale: 1,
 };
 
 const topbarEl = document.querySelector?.(".topbar") || null;
+const phoneStageEl = document.querySelector?.(".phone-stage") || null;
 const phoneBezelEl = document.querySelector?.(".phone-bezel") || null;
 const inspectorShellEl = document.querySelector?.(".inspector-shell") || null;
 const tutorialControlsEl = document.querySelector?.(".tutorial-controls") || null;
@@ -1486,8 +1495,23 @@ function getCurrentScrollY() {
   return Number(window.scrollY ?? window.pageYOffset ?? 0);
 }
 
+function getViewportWidth() {
+  return Number(window.innerWidth || document.documentElement?.clientWidth || 0);
+}
+
 function getViewportHeight() {
   return Number(window.innerHeight || document.documentElement?.clientHeight || 0);
+}
+
+function cancelPendingResizeFrame() {
+  if (tutorial.resizeRafId !== null && typeof window.cancelAnimationFrame === "function") {
+    window.cancelAnimationFrame(tutorial.resizeRafId);
+  }
+  tutorial.resizeRafId = null;
+  if (tutorial.resizeSettleTimer !== null) {
+    window.clearTimeout(tutorial.resizeSettleTimer);
+    tutorial.resizeSettleTimer = null;
+  }
 }
 
 function getStickyHeaderClearance() {
@@ -1513,6 +1537,71 @@ function getStickyHeaderClearance() {
   return defaultPad;
 }
 
+function resetTutorialPhoneScale() {
+  tutorial.phoneScale = 1;
+  if (phoneStageEl?.style) {
+    if (typeof phoneStageEl.style.removeProperty === "function") {
+      phoneStageEl.style.removeProperty("--phone-scale");
+      phoneStageEl.style.removeProperty("--phone-fit-h");
+    } else {
+      delete phoneStageEl.style["--phone-scale"];
+      delete phoneStageEl.style["--phone-fit-h"];
+    }
+  }
+  if (phoneStageEl?.dataset) {
+    delete phoneStageEl.dataset.tutorialScaled;
+  }
+}
+
+function updateTutorialPhoneScale() {
+  if (!tutorial.active) {
+    resetTutorialPhoneScale();
+    return 1;
+  }
+  if (!phoneStageEl || !phoneBezelEl || !tutorialDock) return 1;
+
+  const vh = getViewportHeight();
+  if (vh <= 0) return 1;
+
+  const vw = Number(window.innerWidth || document.documentElement?.clientWidth || 1200);
+  const safeTop = getStickyHeaderClearance();
+  const dockHeight = typeof tutorialDock.getBoundingClientRect === "function"
+    ? tutorialDock.getBoundingClientRect().height
+    : 0;
+  let dockGap = vw <= 640 ? 14 : 22;
+  if (typeof window.getComputedStyle === "function") {
+    const parsedMargin = Number.parseFloat(window.getComputedStyle(tutorialDock).marginBottom);
+    if (Number.isFinite(parsedMargin) && parsedMargin >= 0) {
+      dockGap = parsedMargin;
+    }
+  }
+  const bottomReserve = vw <= 640 ? 12 : 16;
+
+  // Use untransformed layout height (offsetHeight) so repeated calls never compound scaling.
+  const baseH = Number(phoneBezelEl.offsetHeight) || (vw <= 520 ? 700 : 780);
+  if (baseH <= 0) return 1;
+
+  const availableForPhoneH = vh - safeTop - dockHeight - dockGap - bottomReserve;
+  const rawScale = availableForPhoneH / baseH;
+  const clampedScale = Math.max(MIN_TUTORIAL_PHONE_SCALE, Math.min(1, Number(rawScale.toFixed(4))));
+
+  tutorial.phoneScale = clampedScale;
+  if (phoneStageEl.style) {
+    const fitH = `${Math.ceil(baseH * clampedScale)}px`;
+    if (typeof phoneStageEl.style.setProperty === "function") {
+      phoneStageEl.style.setProperty("--phone-scale", String(clampedScale));
+      phoneStageEl.style.setProperty("--phone-fit-h", fitH);
+    } else {
+      phoneStageEl.style["--phone-scale"] = String(clampedScale);
+      phoneStageEl.style["--phone-fit-h"] = fitH;
+    }
+  }
+  if (phoneStageEl.dataset) {
+    phoneStageEl.dataset.tutorialScaled = clampedScale < 0.999 ? "true" : "false";
+  }
+  return clampedScale;
+}
+
 function getVisibleFraction(el, safeTop, vh) {
   if (!el || typeof el.getBoundingClientRect !== "function" || vh <= 0) return 1;
   const rect = el.getBoundingClientRect();
@@ -1521,21 +1610,27 @@ function getVisibleFraction(el, safeTop, vh) {
   return visiblePx / rect.height;
 }
 
-function performGuidedScroll(targetY) {
+function performGuidedScroll(targetY, { instant = false } = {}) {
   if (typeof window.scrollTo !== "function") return;
-  const clampedTarget = Math.max(0, Math.round(targetY));
+  const vh = getViewportHeight();
+  const docScrollHeight = Number(document.documentElement?.scrollHeight || 0);
+  const maxScrollY = docScrollHeight > vh && vh > 0 ? Math.max(0, docScrollHeight - vh) : Infinity;
+  const clampedTarget = Math.max(0, Math.min(maxScrollY, Math.round(targetY)));
   const currentY = getCurrentScrollY();
+  tutorial.lastViewportW = getViewportWidth();
+  tutorial.lastViewportH = vh;
   if (Math.abs(clampedTarget - currentY) < 4) {
     tutorial.lastGuidedScrollY = Math.round(currentY);
     return;
   }
   const reduceMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  const useInstant = reduceMotion || instant;
   tutorial.scrollStartY = currentY;
   tutorial.lastGuidedScrollY = clampedTarget;
-  tutorial.programmaticScrollUntil = Date.now() + (reduceMotion ? 80 : 750);
+  tutorial.programmaticScrollUntil = Date.now() + (useInstant ? 80 : 750);
   window.scrollTo({
     top: clampedTarget,
-    behavior: reduceMotion ? "auto" : "smooth",
+    behavior: useInstant ? "auto" : "smooth",
   });
   if (Math.abs(getCurrentScrollY() - clampedTarget) <= 4) {
     tutorial.programmaticScrollUntil = 0;
@@ -1545,12 +1640,13 @@ function performGuidedScroll(targetY) {
 function ensureTutorialViewportVisible({ reason = "auto", stage = null } = {}) {
   if (!tutorial.active) return;
   if (typeof window.scrollTo !== "function") return;
-  if (reason === "auto" && tutorial.userScrolledAway) return;
+  if ((reason === "auto" || reason === "resize") && tutorial.userScrolledAway) return;
 
   const vh = getViewportHeight();
   if (vh <= 0) return;
   const safeTop = getStickyHeaderClearance();
   const scrollY = getCurrentScrollY();
+  const instant = reason === "resize";
 
   if (stage?.id === "inspector" && inspectorShellEl && typeof inspectorShellEl.getBoundingClientRect === "function") {
     const inspRect = inspectorShellEl.getBoundingClientRect();
@@ -1558,7 +1654,7 @@ function ensureTutorialViewportVisible({ reason = "auto", stage = null } = {}) {
     if (inspRect.top >= safeTop - 4 && inspVis >= 0.7) {
       return;
     }
-    performGuidedScroll(scrollY + inspRect.top - safeTop);
+    performGuidedScroll(scrollY + inspRect.top - safeTop, { instant });
     return;
   }
 
@@ -1568,17 +1664,20 @@ function ensureTutorialViewportVisible({ reason = "auto", stage = null } = {}) {
     ? phoneBezelEl.getBoundingClientRect()
     : null;
 
-  const dockVisible = dockRect.top >= safeTop - 4 && dockRect.bottom <= vh;
-  const phoneVis = phoneRect ? getVisibleFraction(phoneBezelEl, safeTop, vh) : 1;
+  const combinedHeight = phoneRect ? Math.max(dockRect.height, phoneRect.bottom - dockRect.top) : dockRect.height;
+  const canFitBoth = combinedHeight <= vh - safeTop + 2;
+  const dockFullyVisible = dockRect.top >= safeTop - 2 && dockRect.bottom <= vh + 1;
+  const phoneFullyVisible = phoneRect ? (phoneRect.top >= safeTop - 2 && phoneRect.bottom <= vh + 1) : true;
 
-  if (reason !== "start" && dockVisible && phoneVis >= 0.72) {
+  if (reason !== "start" && canFitBoth && dockFullyVisible && phoneFullyVisible) {
     return;
   }
 
   let targetY = Math.max(0, scrollY + dockRect.top - safeTop);
 
-  // On short viewports, make room for the phone while keeping playback reachable.
-  if (phoneRect && phoneRect.height > 0) {
+  // When simultaneous full visibility of dock + readable phone is physically impossible,
+  // anchor to reachable playback controls while maximizing visible phone area below.
+  if (!canFitBoth && phoneRect && phoneRect.height > 0) {
     const projectedPhoneTop = scrollY + phoneRect.top - targetY;
     const projectedVisible = Math.max(
       0,
@@ -1593,24 +1692,79 @@ function ensureTutorialViewportVisible({ reason = "auto", stage = null } = {}) {
     }
   }
 
-  performGuidedScroll(targetY);
+  performGuidedScroll(targetY, { instant });
 }
 
 if (typeof window.addEventListener === "function") {
+  const SCROLL_KEYS = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
   const markManualScrollIntent = (e) => {
     if (!tutorial.active) return;
     if (phoneBody && typeof phoneBody.contains === "function" && e?.target && phoneBody.contains(e.target)) {
       return;
     }
     tutorial.programmaticScrollUntil = 0;
+    tutorial.resizeIgnoreScrollUntil = 0;
   };
   window.addEventListener("wheel", markManualScrollIntent, { passive: true });
   window.addEventListener("touchmove", markManualScrollIntent, { passive: true });
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e && SCROLL_KEYS.has(e.key)) {
+        markManualScrollIntent(e);
+      }
+    },
+    { passive: true },
+  );
+
+  const handleTutorialResize = () => {
+    if (!tutorial.active) return;
+    tutorial.lastViewportW = getViewportWidth();
+    tutorial.lastViewportH = getViewportHeight();
+    tutorial.resizeIgnoreScrollUntil = Date.now() + 260;
+
+    const applySettledResize = () => {
+      tutorial.resizeRafId = null;
+      if (!tutorial.active) return;
+      tutorial.lastViewportW = getViewportWidth();
+      tutorial.lastViewportH = getViewportHeight();
+      tutorial.resizeIgnoreScrollUntil = Date.now() + 260;
+      updateTutorialPhoneScale();
+      if (!tutorial.userScrolledAway) {
+        const stage = TUTORIAL_STAGES[tutorial.stageIndex];
+        ensureTutorialViewportVisible({ reason: "resize", stage });
+      }
+    };
+
+    cancelPendingResizeFrame();
+    if (typeof window.requestAnimationFrame === "function") {
+      tutorial.resizeRafId = window.requestAnimationFrame(applySettledResize);
+    } else {
+      applySettledResize();
+    }
+    tutorial.resizeSettleTimer = window.setTimeout(() => {
+      tutorial.resizeSettleTimer = null;
+      applySettledResize();
+    }, 120);
+  };
+  window.addEventListener("resize", handleTutorialResize, { passive: true });
+  window.visualViewport?.addEventListener?.("resize", handleTutorialResize, { passive: true });
 
   window.addEventListener(
     "scroll",
     () => {
       if (!tutorial.active || tutorial.lastGuidedScrollY === null) return;
+      const curW = getViewportWidth();
+      const curH = getViewportHeight();
+      if (
+        (tutorial.lastViewportW !== null && curW !== tutorial.lastViewportW) ||
+        (tutorial.lastViewportH !== null && curH !== tutorial.lastViewportH)
+      ) {
+        return;
+      }
+      if (Date.now() < tutorial.resizeIgnoreScrollUntil) {
+        return;
+      }
       const curY = getCurrentScrollY();
       const dist = Math.abs(curY - tutorial.lastGuidedScrollY);
       if (Date.now() < tutorial.programmaticScrollUntil) {
@@ -1739,6 +1893,7 @@ function goToTutorialStage(index, { autoPlay = tutorial.playing, scrollReason = 
   const stage = TUTORIAL_STAGES[clamped];
   stage.enter();
   updateTutorialUI();
+  updateTutorialPhoneScale();
   ensureTutorialViewportVisible({ reason: scrollReason, stage });
   announce(`Tutorial stage ${clamped + 1} of ${TUTORIAL_STAGES.length}: ${stage.title}.`);
 
@@ -1750,11 +1905,15 @@ function goToTutorialStage(index, { autoPlay = tutorial.playing, scrollReason = 
 function startTutorial() {
   clearTutorialTimers();
   cancelPendingPackReveal();
+  cancelPendingResizeFrame();
   sessionVersion += 1;
   tutorial.userScrolledAway = false;
   tutorial.lastGuidedScrollY = null;
   tutorial.scrollStartY = null;
   tutorial.programmaticScrollUntil = 0;
+  tutorial.resizeIgnoreScrollUntil = 0;
+  tutorial.lastViewportW = getViewportWidth();
+  tutorial.lastViewportH = getViewportHeight();
   state = createInitialState();
   goToTutorialStage(0, { autoPlay: true, scrollReason: "start" });
 }
@@ -1793,6 +1952,7 @@ function exitTutorial({ silent = false } = {}) {
     window.scrollTo({ top: getCurrentScrollY(), behavior: "instant" });
   }
   clearTutorialTimers();
+  cancelPendingResizeFrame();
   settlePendingPackReveal({ renderNow: true });
   tutorial.runId += 1;
   tutorial.active = false;
@@ -1803,6 +1963,10 @@ function exitTutorial({ silent = false } = {}) {
   tutorial.lastGuidedScrollY = null;
   tutorial.scrollStartY = null;
   tutorial.programmaticScrollUntil = 0;
+  tutorial.resizeIgnoreScrollUntil = 0;
+  tutorial.lastViewportW = null;
+  tutorial.lastViewportH = null;
+  resetTutorialPhoneScale();
   updateTutorialUI();
   if (!silent) {
     announce("Exited guided tutorial. Exploring manually.");
@@ -1921,6 +2085,7 @@ window.__FB_TUTORIAL__ = {
     subActionDone: tutorial.subActionDone,
     userScrolledAway: tutorial.userScrolledAway,
     lastGuidedScrollY: tutorial.lastGuidedScrollY,
+    phoneScale: tutorial.phoneScale,
     totalStages: TUTORIAL_STAGES.length,
     hasPendingTimers: tutorial.stageTimer !== null || tutorial.subTimer !== null || pendingPackReveal !== null,
     hasPendingPackReveal: pendingPackReveal !== null,

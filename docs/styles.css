@@ -391,6 +391,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   position: sticky;
   top: 78px;
   scroll-margin-top: 84px;
+  --phone-scale: 1;
+}
+
+.phone-scale-box {
+  width: 100%;
+  height: var(--phone-fit-h, 780px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .phone-bezel {
@@ -402,6 +412,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: linear-gradient(155deg, #2E2D2B 0%, #141518 46%, #242529 100%);
   box-shadow: var(--shadow-phone);
   position: relative;
+  flex-shrink: 0;
+  transform: scale(var(--phone-scale, 1));
+  transform-origin: top center;
 }
 
 .phone-screen {
@@ -1634,6 +1647,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 @media (max-width: 520px) {
+  .phone-scale-box {
+    height: var(--phone-fit-h, 700px);
+  }
+
   .phone-bezel {
     width: 100%;
     height: 700px;

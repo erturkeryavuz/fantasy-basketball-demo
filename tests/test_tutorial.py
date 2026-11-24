@@ -1050,6 +1050,614 @@ console.log(JSON.stringify({
             if mode != "reduce":
                 self.assertEqual(res["interruptedScroll"], {"top": 100, "behavior": "instant", "fromY": 100})
 
+    def test_proportional_phone_scaling_and_viewport_fit(self):
+        html = (DOCS / "index.html").read_text(encoding="utf-8")
+        css = (DOCS / "styles.css").read_text(encoding="utf-8")
+        self.assertIn('class="phone-scale-box"', html)
+        self.assertIn("--phone-scale", css)
+        self.assertIn("--phone-fit-h", css)
+        self.assertIn("transform: scale(var(--phone-scale, 1))", css)
+
+        scale_harness = r"""
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const docsDir = process.argv[1];
+const cases = [
+  { name: "1536x960", w: 1536, h: 960, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780 },
+  { name: "1440x900", w: 1440, h: 900, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780 },
+  { name: "1366x768", w: 1366, h: 768, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780 },
+  { name: "768x1024", w: 768, h: 1024, dockTop: 534, dockH: 170, dockGap: 22, phoneBaseH: 780 },
+  { name: "390x844", w: 390, h: 844, dockTop: 792, dockH: 219, dockGap: 14, phoneBaseH: 700 },
+  { name: "320x480", w: 320, h: 480, dockTop: 880, dockH: 237, dockGap: 14, phoneBaseH: 700 },
+];
+
+let activeCfg = cases[0];
+const winListeners = new Map();
+const timers = new Map();
+let nextTimerId = 1;
+
+globalThis.window = globalThis;
+window.scrollY = 0;
+Object.defineProperty(window, "innerWidth", { get: () => activeCfg.w, configurable: true });
+Object.defineProperty(window, "innerHeight", { get: () => activeCfg.h, configurable: true });
+window.scrollTo = (opts) => {
+  const top = typeof opts === "number" ? opts : Number(opts?.top || 0);
+  window.scrollY = Math.max(0, top);
+  for (const fn of winListeners.get("scroll") || []) fn({});
+};
+window.addEventListener = (type, fn) => {
+  if (!winListeners.has(type)) winListeners.set(type, []);
+  winListeners.get(type).push(fn);
+};
+window.getComputedStyle = (el) => {
+  if (el?.id === "tutorialDock") return { marginBottom: `${activeCfg.dockGap}px` };
+  if (el?.selector === ".topbar") return { position: "sticky" };
+  return { overflowX: "hidden" };
+};
+window.setTimeout = (fn) => {
+  const id = nextTimerId++;
+  timers.set(id, fn);
+  return id;
+};
+window.clearTimeout = (id) => timers.delete(id);
+window.requestAnimationFrame = (fn) => { fn(); return 1; };
+window.matchMedia = () => ({ matches: false, media: "" });
+
+class FakeEl {
+  constructor(tag, id = "", attrs = {}, rectFn = null) {
+    this.tagName = tag.toUpperCase();
+    this.id = id;
+    this.selector = attrs.selector || "";
+    this.attrs = { ...attrs };
+    this.dataset = {};
+    this.hidden = Boolean(attrs.hidden);
+    this.disabled = false;
+    this.textContent = "";
+    this.innerHTML = "";
+    this.listeners = new Map();
+    this._rectFn = rectFn;
+    this._props = new Map();
+    this.style = {
+      setProperty: (k, v) => this._props.set(k, String(v)),
+      getPropertyValue: (k) => this._props.get(k) || "",
+      removeProperty: (k) => this._props.delete(k),
+    };
+    this._classes = new Set((attrs.class || "").split(/\s+/).filter(Boolean));
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k.startsWith("data-")) {
+        this.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
+      }
+    }
+    this.classList = {
+      add: (c) => this._classes.add(c),
+      remove: (c) => this._classes.delete(c),
+      toggle: (c, f) => (f ? this._classes.add(c) : this._classes.delete(c)),
+      contains: (c) => this._classes.has(c),
+    };
+  }
+  get offsetHeight() { return this.selector === ".phone-bezel" ? activeCfg.phoneBaseH : 0; }
+  getBoundingClientRect() {
+    if (this._rectFn) return this._rectFn();
+    return { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
+  }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  addEventListener(type, fn) {
+    if (!this.listeners.has(type)) this.listeners.set(type, []);
+    this.listeners.get(type).push(fn);
+  }
+  click() {
+    if (this.disabled) return;
+    for (const fn of this.listeners.get("click") || []) fn({ target: this, preventDefault() {} });
+  }
+  focus() { document.activeElement = this; }
+  contains() { return false; }
+  querySelectorAll() { return []; }
+}
+
+const byId = new Map();
+const mk = (tag, id, attrs = {}, rectFn = null) => {
+  const el = new FakeEl(tag, id, attrs, rectFn);
+  if (id) byId.set(id, el);
+  return el;
+};
+
+const phoneStage = new FakeEl("section", "", { selector: ".phone-stage" });
+const topbar = new FakeEl("header", "", { selector: ".topbar" }, () => ({
+  top: -window.scrollY,
+  bottom: 66 - window.scrollY,
+  height: 66,
+}));
+const phoneBezel = new FakeEl("div", "", { selector: ".phone-bezel" }, () => {
+  const scale = Number(phoneStage.style.getPropertyValue("--phone-scale") || 1);
+  const phoneDocTop = activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap;
+  const top = phoneDocTop - window.scrollY;
+  const scaledH = activeCfg.phoneBaseH * scale;
+  return { top, bottom: top + scaledH, height: scaledH };
+});
+const inspectorShell = new FakeEl("section", "", { selector: ".inspector-shell" }, () => ({
+  top: activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap - window.scrollY,
+  bottom: activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap + 300 - window.scrollY,
+  height: 300,
+}));
+const tutorialControls = new FakeEl("div", "", { selector: ".tutorial-controls" }, () => {
+  const top = activeCfg.dockTop + 56 - window.scrollY;
+  return { top, bottom: top + 54, height: 54 };
+});
+
+mk("section", "tutorialDock", { hidden: true }, () => {
+  const top = activeCfg.dockTop - window.scrollY;
+  return { top, bottom: top + activeCfg.dockH, height: activeCfg.dockH };
+});
+
+for (const [tag, id, attrs] of [
+  ["div", "phoneBody", {}],
+  ["div", "iosStatusbar", {}],
+  ["div", "homeIndicator", {}],
+  ["div", "panelTrace", {}],
+  ["div", "panelLeague", { hidden: true }],
+  ["div", "panelArch", { hidden: true }],
+  ["div", "srAnnouncer", {}],
+  ["button", "btnAddCredits", {}],
+  ["button", "btnResetDemo", {}],
+  ["button", "btnWatchTutorial", {}],
+  ["span", "tutorialStepBadge", {}],
+  ["span", "tutorialStateBadge", {}],
+  ["h2", "tutorialStageTitle", {}],
+  ["div", "tutorialProgress", {}],
+  ["div", "tutorialProgressFill", {}],
+  ["p", "tutorialNarration", {}],
+  ["button", "btnTutPrev", {}],
+  ["button", "btnTutPlayPause", {}],
+  ["button", "btnTutNext", {}],
+  ["button", "btnTutRestart", {}],
+  ["button", "btnTutExit", {}],
+  ["button", "btnBuyPack", {}],
+]) {
+  mk(tag, id, attrs);
+}
+
+const tourPills = ["welcome", "home", "market", "pack-diamond", "my-cards", "players", "player-card", "teams"].map(
+  (k) => new FakeEl("button", "", { class: "tour-pill", "data-tour": k })
+);
+const inspectorTabs = ["trace", "league", "arch"].map(
+  (k) => new FakeEl("button", `tab_${k}`, { class: "inspector-tab", "data-inspector": k })
+);
+
+globalThis.document = {
+  activeElement: null,
+  documentElement: { get clientHeight() { return activeCfg.h; }, get clientWidth() { return activeCfg.w; } },
+  body: {},
+  getElementById: (id) => byId.get(id) || null,
+  querySelector: (sel) => {
+    if (sel === ".topbar") return topbar;
+    if (sel === ".phone-stage") return phoneStage;
+    if (sel === ".phone-bezel") return phoneBezel;
+    if (sel === ".inspector-shell") return inspectorShell;
+    if (sel === ".tutorial-controls") return tutorialControls;
+    return null;
+  },
+  querySelectorAll: (sel) => {
+    if (sel === ".tour-pill") return tourPills;
+    if (sel === ".inspector-tab") return inspectorTabs;
+    return [];
+  },
+  addEventListener: () => {},
+};
+
+await import(pathToFileURL(path.join(docsDir, "app.js")).href);
+const api = window.__FB_TUTORIAL__;
+
+const out = {};
+for (const c of cases) {
+  activeCfg = c;
+  window.scrollY = 0;
+  byId.get("btnWatchTutorial").click();
+  const s1 = api.getState().phoneScale;
+  const dockRect = byId.get("tutorialDock").getBoundingClientRect();
+  const phoneRect = phoneBezel.getBoundingClientRect();
+  const controlsRect = tutorialControls.getBoundingClientRect();
+  const fitH = phoneStage.style.getPropertyValue("--phone-fit-h");
+  // Step Next to Stage 2 -> verify scaling does not compound or drift
+  byId.get("btnTutNext").click();
+  const s2 = api.getState().phoneScale;
+  byId.get("btnTutExit").click();
+  const scaleAfterExit = api.getState().phoneScale;
+  const cssScaleAfterExit = phoneStage.style.getPropertyValue("--phone-scale");
+  out[c.name] = {
+    scale: s1,
+    scaleAfterNext: s2,
+    fitH,
+    dockTop: dockRect.top,
+    controlsTop: controlsRect.top,
+    controlsBottom: controlsRect.bottom,
+    phoneTop: phoneRect.top,
+    phoneBottom: phoneRect.bottom,
+    clippedPx: Math.max(0, phoneRect.bottom - c.h),
+    scaleAfterExit,
+    cssScaleAfterExit,
+  };
+}
+
+// Verify live resize recalculates phone scale cleanly while tutorial is active
+activeCfg = cases[0]; // 1536x960 -> scale 1
+window.scrollY = 0;
+byId.get("btnWatchTutorial").click();
+const beforeResizeScale = api.getState().phoneScale;
+activeCfg = cases[2]; // resize to 1366x768 -> should shrink proportionally
+for (const fn of winListeners.get("resize") || []) fn({});
+const afterResizeScale = api.getState().phoneScale;
+byId.get("btnTutExit").click();
+
+console.log(JSON.stringify({ cases: out, beforeResizeScale, afterResizeScale }));
+"""
+        proc = subprocess.run(
+            ["node", "--input-type=module", "-e", scale_harness, str(DOCS)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, f"Scale harness failed:\n{proc.stderr}")
+        data = json.loads(proc.stdout)
+        c = data["cases"]
+
+        # Tall viewports stay native 1.0 with zero clipping
+        for name in ("1536x960", "768x1024"):
+            self.assertEqual(c[name]["scale"], 1)
+            self.assertEqual(c[name]["clippedPx"], 0)
+            self.assertEqual(c[name]["scaleAfterNext"], c[name]["scale"])
+            self.assertEqual(c[name]["scaleAfterExit"], 1)
+            self.assertEqual(c[name]["cssScaleAfterExit"], "")
+
+        # Standard desktop, laptop, and mobile scale proportionally so full phone + dock fit with 0px clipped
+        for name in ("1440x900", "1366x768", "390x844"):
+            self.assertGreaterEqual(c[name]["scale"], 0.68, f"{name} shrank below readable minimum")
+            self.assertLess(c[name]["scale"], 1.0, f"{name} should proportionally scale to fit viewport")
+            self.assertEqual(c[name]["clippedPx"], 0, f"{name} still clips phone bottom")
+            self.assertGreaterEqual(c[name]["dockTop"], 8)
+            self.assertEqual(c[name]["scaleAfterNext"], c[name]["scale"], f"{name} compounded scale across stages")
+            self.assertEqual(c[name]["scaleAfterExit"], 1)
+            self.assertEqual(c[name]["cssScaleAfterExit"], "")
+
+        # Very short window (320x480) enforces minimum readable scale (0.68) and keeps controls visible
+        self.assertEqual(c["320x480"]["scale"], 0.68)
+        self.assertGreaterEqual(c["320x480"]["controlsTop"], 0)
+        self.assertLessEqual(c["320x480"]["controlsBottom"], 480)
+        self.assertEqual(c["320x480"]["scaleAfterExit"], 1)
+
+        # Live window resize adapts scale dynamically
+        self.assertEqual(data["beforeResizeScale"], 1)
+        self.assertLess(data["afterResizeScale"], 0.85)
+        self.assertGreaterEqual(data["afterResizeScale"], 0.68)
+
+    def test_resize_scroll_discrimination_and_full_fit_remediation(self):
+        remediation_harness = r"""
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const docsDir = process.argv[1];
+const seq = [
+  { name: "1366x768", w: 1366, h: 768, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780, browserAnchorShift: 0 },
+  { name: "1280x768", w: 1280, h: 768, dockTop: 387, dockH: 110, dockGap: 22, phoneBaseH: 780, browserAnchorShift: -3 },
+  { name: "1024x768", w: 1024, h: 768, dockTop: 412, dockH: 130, dockGap: 22, phoneBaseH: 780, browserAnchorShift: 25 },
+  { name: "960x768",  w: 960,  h: 768, dockTop: 538, dockH: 168, dockGap: 22, phoneBaseH: 780, browserAnchorShift: 126 },
+  { name: "800x900",  w: 800,  h: 900, dockTop: 535, dockH: 168, dockGap: 22, phoneBaseH: 780, browserAnchorShift: -3 },
+  { name: "390x844",  w: 390,  h: 844, dockTop: 792, dockH: 219, dockGap: 14, phoneBaseH: 700, browserAnchorShift: 32 },
+  { name: "430x844",  w: 430,  h: 844, dockTop: 765, dockH: 205, dockGap: 14, phoneBaseH: 700, browserAnchorShift: -26 },
+  { name: "390x800",  w: 390,  h: 800, dockTop: 792, dockH: 219, dockGap: 14, phoneBaseH: 700, browserAnchorShift: 26 },
+  { name: "1366x768_ret", w: 1366, h: 768, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780, browserAnchorShift: -2 },
+  { name: "1440x900", w: 1440, h: 900, dockTop: 390, dockH: 110, dockGap: 22, phoneBaseH: 780, browserAnchorShift: 0 },
+];
+
+let activeCfg = seq[0];
+const winListeners = new Map();
+const timers = new Map();
+let nextTimerId = 1;
+let rafQueue = [];
+let nextRafId = 1;
+
+globalThis.window = globalThis;
+window.scrollY = 0;
+Object.defineProperty(window, "innerWidth", { get: () => activeCfg.w, configurable: true });
+Object.defineProperty(window, "innerHeight", { get: () => activeCfg.h, configurable: true });
+window.scrollTo = (opts) => {
+  const top = typeof opts === "number" ? opts : Number(opts?.top || 0);
+  window.scrollY = Math.max(0, top);
+  for (const fn of winListeners.get("scroll") || []) fn({});
+};
+window.addEventListener = (type, fn) => {
+  if (!winListeners.has(type)) winListeners.set(type, []);
+  winListeners.get(type).push(fn);
+};
+window.getComputedStyle = (el) => {
+  if (el?.id === "tutorialDock") return { marginBottom: `${activeCfg.dockGap}px` };
+  if (el?.selector === ".topbar") return { position: "sticky" };
+  return { overflowX: "hidden" };
+};
+window.setTimeout = (fn) => {
+  const id = nextTimerId++;
+  timers.set(id, fn);
+  return id;
+};
+window.clearTimeout = (id) => timers.delete(id);
+window.requestAnimationFrame = (fn) => {
+  const id = nextRafId++;
+  rafQueue.push({ id, fn });
+  return id;
+};
+window.cancelAnimationFrame = (id) => {
+  rafQueue = rafQueue.filter((item) => item.id !== id);
+};
+function flushRaf() {
+  while (rafQueue.length > 0) {
+    const batch = rafQueue.splice(0, rafQueue.length);
+    for (const item of batch) item.fn();
+  }
+}
+window.matchMedia = () => ({ matches: false, media: "" });
+
+class FakeEl {
+  constructor(tag, id = "", attrs = {}, rectFn = null) {
+    this.tagName = tag.toUpperCase();
+    this.id = id;
+    this.selector = attrs.selector || "";
+    this.attrs = { ...attrs };
+    this.dataset = {};
+    this.hidden = Boolean(attrs.hidden);
+    this.disabled = false;
+    this.textContent = "";
+    this.innerHTML = "";
+    this.listeners = new Map();
+    this._rectFn = rectFn;
+    this._props = new Map();
+    this.style = {
+      setProperty: (k, v) => this._props.set(k, String(v)),
+      getPropertyValue: (k) => this._props.get(k) || "",
+      removeProperty: (k) => this._props.delete(k),
+    };
+    this._classes = new Set((attrs.class || "").split(/\s+/).filter(Boolean));
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k.startsWith("data-")) {
+        this.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
+      }
+    }
+    this.classList = {
+      add: (c) => this._classes.add(c),
+      remove: (c) => this._classes.delete(c),
+      toggle: (c, f) => (f ? this._classes.add(c) : this._classes.delete(c)),
+      contains: (c) => this._classes.has(c),
+    };
+  }
+  get offsetHeight() { return this.selector === ".phone-bezel" ? activeCfg.phoneBaseH : 0; }
+  getBoundingClientRect() {
+    if (this._rectFn) return this._rectFn();
+    return { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
+  }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  addEventListener(type, fn) {
+    if (!this.listeners.has(type)) this.listeners.set(type, []);
+    this.listeners.get(type).push(fn);
+  }
+  click() {
+    if (this.disabled) return;
+    for (const fn of this.listeners.get("click") || []) fn({ target: this, preventDefault() {} });
+  }
+  focus() { document.activeElement = this; }
+  contains() { return false; }
+  querySelectorAll() { return []; }
+}
+
+const byId = new Map();
+const mk = (tag, id, attrs = {}, rectFn = null) => {
+  const el = new FakeEl(tag, id, attrs, rectFn);
+  if (id) byId.set(id, el);
+  return el;
+};
+
+const phoneStage = new FakeEl("section", "", { selector: ".phone-stage" });
+const topbar = new FakeEl("header", "", { selector: ".topbar" }, () => ({
+  top: -window.scrollY,
+  bottom: 66 - window.scrollY,
+  height: 66,
+}));
+const phoneBezel = new FakeEl("div", "", { selector: ".phone-bezel" }, () => {
+  const scale = Number(phoneStage.style.getPropertyValue("--phone-scale") || 1);
+  const phoneDocTop = activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap;
+  const top = phoneDocTop - window.scrollY;
+  const scaledH = activeCfg.phoneBaseH * scale;
+  return { top, bottom: top + scaledH, height: scaledH };
+});
+const inspectorShell = new FakeEl("section", "", { selector: ".inspector-shell" }, () => ({
+  top: activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap - window.scrollY,
+  bottom: activeCfg.dockTop + activeCfg.dockH + activeCfg.dockGap + 300 - window.scrollY,
+  height: 300,
+}));
+const tutorialControls = new FakeEl("div", "", { selector: ".tutorial-controls" }, () => {
+  const top = activeCfg.dockTop + 56 - window.scrollY;
+  return { top, bottom: top + 54, height: 54 };
+});
+
+mk("section", "tutorialDock", { hidden: true }, () => {
+  const top = activeCfg.dockTop - window.scrollY;
+  return { top, bottom: top + activeCfg.dockH, height: activeCfg.dockH };
+});
+
+for (const [tag, id, attrs] of [
+  ["div", "phoneBody", {}],
+  ["div", "iosStatusbar", {}],
+  ["div", "homeIndicator", {}],
+  ["div", "panelTrace", {}],
+  ["div", "panelLeague", { hidden: true }],
+  ["div", "panelArch", { hidden: true }],
+  ["div", "srAnnouncer", {}],
+  ["button", "btnAddCredits", {}],
+  ["button", "btnResetDemo", {}],
+  ["button", "btnWatchTutorial", {}],
+  ["span", "tutorialStepBadge", {}],
+  ["span", "tutorialStateBadge", {}],
+  ["h2", "tutorialStageTitle", {}],
+  ["div", "tutorialProgress", {}],
+  ["div", "tutorialProgressFill", {}],
+  ["p", "tutorialNarration", {}],
+  ["button", "btnTutPrev", {}],
+  ["button", "btnTutPlayPause", {}],
+  ["button", "btnTutNext", {}],
+  ["button", "btnTutRestart", {}],
+  ["button", "btnTutExit", {}],
+  ["button", "btnBuyPack", {}],
+]) {
+  mk(tag, id, attrs);
+}
+
+const tourPills = ["welcome", "home", "market", "pack-diamond", "my-cards", "players", "player-card", "teams"].map(
+  (k) => new FakeEl("button", "", { class: "tour-pill", "data-tour": k })
+);
+const inspectorTabs = ["trace", "league", "arch"].map(
+  (k) => new FakeEl("button", `tab_${k}`, { class: "inspector-tab", "data-inspector": k })
+);
+
+globalThis.document = {
+  activeElement: null,
+  documentElement: {
+    get clientHeight() { return activeCfg.h; },
+    get clientWidth() { return activeCfg.w; },
+    scrollHeight: 2600,
+  },
+  body: {},
+  getElementById: (id) => byId.get(id) || null,
+  querySelector: (sel) => {
+    if (sel === ".topbar") return topbar;
+    if (sel === ".phone-stage") return phoneStage;
+    if (sel === ".phone-bezel") return phoneBezel;
+    if (sel === ".inspector-shell") return inspectorShell;
+    if (sel === ".tutorial-controls") return tutorialControls;
+    return null;
+  },
+  querySelectorAll: (sel) => {
+    if (sel === ".tour-pill") return tourPills;
+    if (sel === ".inspector-tab") return inspectorTabs;
+    return [];
+  },
+  addEventListener: () => {},
+};
+
+await import(pathToFileURL(path.join(docsDir, "app.js")).href);
+const api = window.__FB_TUTORIAL__;
+
+// 1 & 2. Sequential 10-step resize WITH browser scroll-anchoring firing BEFORE and AFTER resize
+byId.get("btnWatchTutorial").click();
+flushRaf();
+const seqResults = [];
+for (let i = 0; i < seq.length; i++) {
+  if (i > 0) {
+    activeCfg = seq[i];
+    // Simulate Chrome firing scroll-anchoring shift BEFORE resize handler runs
+    if (seq[i].browserAnchorShift !== 0) {
+      window.scrollY = Math.max(0, window.scrollY + seq[i].browserAnchorShift);
+      for (const fn of winListeners.get("scroll") || []) fn({});
+    }
+    for (const fn of winListeners.get("resize") || []) fn({});
+    // Simulate a second browser layout-settle scroll event right after resize before rAF
+    window.scrollY = Math.max(0, window.scrollY + 12);
+    for (const fn of winListeners.get("scroll") || []) fn({});
+    flushRaf();
+  }
+  const dockRect = byId.get("tutorialDock").getBoundingClientRect();
+  const phoneRect = phoneBezel.getBoundingClientRect();
+  seqResults.push({
+    name: seq[i].name,
+    scale: api.getState().phoneScale,
+    userScrolledAway: api.getState().userScrolledAway,
+    dockTop: dockRect.top,
+    phoneBottom: phoneRect.bottom,
+    vh: seq[i].h,
+    clippedPx: Math.max(0, phoneRect.bottom - seq[i].h),
+  });
+}
+
+// 3. Partial-clipping recovery: even when 83% visible (legacy >0.72), full-fit repositions to 0px clipped!
+activeCfg = seq[0]; // 1366x768
+byId.get("btnTutRestart").click();
+flushRaf();
+const idealY = window.scrollY;
+// Drift scrollY up by 100px (leaving dock visible and ~83% of phone visible, ~100px clipped) without user opt-out
+window.scrollY = Math.max(0, idealY - 100);
+const clippedBeforeStep = Math.max(0, phoneBezel.getBoundingClientRect().bottom - activeCfg.h);
+byId.get("btnTutNext").click(); // Stage 2 step should restore full 0px fit!
+flushRaf();
+const clippedAfterStep = Math.max(0, phoneBezel.getBoundingClientRect().bottom - activeCfg.h);
+
+// 4. Genuine manual scroll opt-out is preserved across subsequent resizes!
+byId.get("btnTutRestart").click();
+flushRaf();
+for (const fn of winListeners.get("wheel") || []) fn({ target: null });
+window.scrollY = 0;
+for (const fn of winListeners.get("scroll") || []) fn({});
+const manualOptOutFlag = api.getState().userScrolledAway;
+activeCfg = seq[5]; // resize to 390x844
+for (const fn of winListeners.get("resize") || []) fn({});
+flushRaf();
+const manualAfterResize = {
+  scrollY: window.scrollY,
+  userScrolledAway: api.getState().userScrolledAway,
+  scale: api.getState().phoneScale,
+};
+
+// 5 & 7. Manual tour pill exits tutorial and restores native unscaled phone height
+tourPills[2].click(); // "market"
+const afterManualPill = {
+  active: api.getState().active,
+  phoneScale: api.getState().phoneScale,
+  cssScale: phoneStage.style.getPropertyValue("--phone-scale"),
+  cssFitH: phoneStage.style.getPropertyValue("--phone-fit-h"),
+};
+
+console.log(JSON.stringify({
+  seqResults,
+  clippedBeforeStep,
+  clippedAfterStep,
+  manualOptOutFlag,
+  manualAfterResize,
+  afterManualPill,
+}));
+"""
+        proc = subprocess.run(
+            ["node", "--input-type=module", "-e", remediation_harness, str(DOCS)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, f"Remediation harness failed:\n{proc.stderr}")
+        res = json.loads(proc.stdout)
+
+        # Every step in the 10-step sequential resize preserves userScrolledAway=False and 0px clipping!
+        self.assertEqual(len(res["seqResults"]), 10)
+        for step in res["seqResults"]:
+            self.assertFalse(step["userScrolledAway"], f"Browser resize falsely tripped userScrolledAway at {step['name']}")
+            self.assertGreaterEqual(step["scale"], 0.68, f"Scale dipped below 0.68 at {step['name']}")
+            self.assertLessEqual(step["scale"], 1.0, f"Scale exceeded 1.0 at {step['name']}")
+            self.assertGreaterEqual(step["dockTop"], 8, f"Dock clipped off top at {step['name']}")
+            self.assertEqual(step["clippedPx"], 0, f"Phone clipped at {step['name']}: {step}")
+
+        # Non-compounding verification: returning to 1366x768 produces exact same scale as initial 1366x768
+        self.assertEqual(res["seqResults"][0]["scale"], res["seqResults"][8]["scale"])
+
+        # Partial-clipping recovery (~83% visible / >0.72 legacy threshold) now repositions to 0px clipped
+        self.assertGreater(res["clippedBeforeStep"], 50)
+        self.assertEqual(res["clippedAfterStep"], 0)
+
+        # Genuine manual scroll opt-out is preserved across resizes (scrollY stays at 0, scale still updates)
+        self.assertTrue(res["manualOptOutFlag"])
+        self.assertTrue(res["manualAfterResize"]["userScrolledAway"])
+        self.assertEqual(res["manualAfterResize"]["scrollY"], 0)
+        self.assertLess(res["manualAfterResize"]["scale"], 1.0)
+
+        # Manual tour navigation exits cleanly and restores unscaled native phone dimensions
+        self.assertFalse(res["afterManualPill"]["active"])
+        self.assertEqual(res["afterManualPill"]["phoneScale"], 1)
+        self.assertEqual(res["afterManualPill"]["cssScale"], "")
+        self.assertEqual(res["afterManualPill"]["cssFitH"], "")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
