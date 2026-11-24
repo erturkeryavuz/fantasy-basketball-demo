@@ -306,7 +306,7 @@ function navigate(screen, opts = {}) {
       status: 200,
       swiftView: "TeamsView.swift → APIService.fetchTeams()",
       djangoView: "TeamViewSet (list)",
-      permission: "IsAdminOrReadOnly (Phase 2A)",
+      permission: "IsAdminOrReadOnly",
       request: null,
       response: TEAMS.map(({ id, name, city, established_year, arena_name, logo }) => ({
         id,
@@ -316,7 +316,7 @@ function navigate(screen, opts = {}) {
         logo: `/media/team_logos/${logo.split("/").pop()}`,
         arena_name,
       })),
-      note: "Displays the 4 clubs with original geometric monogram badges over the systemGray2 → orange gradient.",
+      note: "Lists the 4 clubs from /api/teams/ with custom geometric monogram badges.",
     });
   } else if (screen === "team-players") {
     const roster = PLAYERS.filter((p) => p.team === state.selectedTeamId);
@@ -326,7 +326,7 @@ function navigate(screen, opts = {}) {
       status: 200,
       swiftView: "TeamPlayersView.swift → APIService.fetchPlayers(forTeamId:)",
       djangoView: "PlayerViewSet (DjangoFilterBackend)",
-      permission: "IsAdminOrReadOnly (Phase 2A)",
+      permission: "IsAdminOrReadOnly",
       request: null,
       response: roster.map(serializePlayer),
       note: "Server-side team filter backed by django_filters (`filterset_fields = ['team']`).",
@@ -339,7 +339,7 @@ function navigate(screen, opts = {}) {
       status: 200,
       swiftView: "PlayersView.swift → APIService.fetchPlayers()",
       djangoView: "PlayerViewSet (list)",
-      permission: "IsAdminOrReadOnly (Phase 2A)",
+      permission: "IsAdminOrReadOnly",
       request: null,
       response: {
         count_total: PLAYERS.length,
@@ -347,21 +347,21 @@ function navigate(screen, opts = {}) {
         active_filters: { ...state.filters },
         sample: filtered.slice(0, 2).map(serializePlayer),
       },
-      note: "Shows all 8 real players with verified Creative Commons portraits and Position, Country, Team, and 0–99 OVR filters.",
+      note: "Displays all 8 players with client-side Position, Nationality, Team, and 0–99 OVR filters.",
     });
   } else if (screen === "player-detail") {
     const p = PLAYERS.find((x) => x.id === state.selectedPlayerId) || PLAYERS[0];
     const provenanceNote =
       p.provenance === "verbatim_swift_preview"
-        ? `Verbatim attributes from PlayerDetailView.swift:297-314. ${p.photoCredit}.`
-        : `Illustrative demo card ratings (not official league stats) aligned to PlayerSerializer. ${p.photoCredit}.`;
+        ? `Attributes match PlayerDetailView.swift. ${p.photoCredit}.`
+        : `Illustrative card ratings (not official league stats) aligned to PlayerSerializer. ${p.photoCredit}.`;
     recordTrace({
       method: "GET",
       endpoint: `/api/players/${p.id}/`,
       status: 200,
-      swiftView: "PlayerDetailView.swift (3D Flippable Collectible Card)",
+      swiftView: "PlayerDetailView.swift (3D Collectible Card)",
       djangoView: "PlayerViewSet (retrieve)",
-      permission: "IsAdminOrReadOnly (Phase 2A)",
+      permission: "IsAdminOrReadOnly",
       request: null,
       response: serializePlayer(p),
       note: `${provenanceNote} Tap card to flip 180° for Best Skill and physical stats.`,
@@ -376,7 +376,7 @@ function navigate(screen, opts = {}) {
       permission: "IsAuthenticated",
       request: null,
       response: { username: state.username, credits: state.credits },
-      note: "2-column .ultraThinMaterial PackMarket grid reproducing samplePacks (Gold 500, Amethyst 800, Diamond 1,000).",
+      note: "2-column PackMarket grid listing Gold (500), Amethyst (800), and Diamond (1,000) credit packs.",
     });
   } else if (screen === "pack-detail") {
     const pk = CARD_PACKS.find((x) => x.id === state.selectedPackId) || CARD_PACKS[0];
@@ -385,7 +385,7 @@ function navigate(screen, opts = {}) {
       endpoint: "/api/profile/",
       status: 200,
       swiftView: "CardPackDetailView.swift",
-      djangoView: "OpenCardPackView (Verified Drop Table)",
+      djangoView: "OpenCardPackView",
       permission: "IsAuthenticated",
       request: null,
       response: {
@@ -517,7 +517,7 @@ function renderWelcome() {
           <span>Register</span>
         </button>
         <button id="btnQuickDemoLogin" class="sw-demo-shortcut" type="button">
-          Quick Demo Sign-In (hoopfan) →
+          Quick Sign-In (hoopfan) →
         </button>
       </div>
     </div>
@@ -912,12 +912,12 @@ function renderTracePanel() {
   if (!state.traces.length) {
     return `
       <p style="font-size:0.84rem;color:var(--text-muted);margin-top:0">
-        Interact with any screen inside the SwiftUI phone frame (or choose a Guided Tour step above) to inspect the matching Django REST Framework endpoint, authorization rule, and serializer JSON payload.
+        Interact with any screen inside the phone frame—or choose a screen shortcut above—to inspect the matching Django REST Framework endpoint, authorization rule, and serializer JSON payload.
       </p>
       <div class="meta-tile">
         <div class="meta-k">Media Licensing &amp; Data Provenance</div>
         <div style="font-size:0.82rem;color:var(--text-muted)">
-          Portraits and the court backdrop use verified Creative Commons photographs from Wikimedia Commons (<a href="notices.html">full credits &amp; licenses</a>); the app icon and 4 club emblems are original SVGs. Stephen Curry's attributes match <code>PlayerDetailView.swift</code> verbatim, while ratings for the other 7 players are illustrative demo values. Zero live backend requests are made.
+          Portraits and the court backdrop use Creative Commons photographs from Wikimedia Commons (<a href="notices.html">full credits &amp; licenses</a>); the app icon and 4 club emblems are original SVGs. Stephen Curry's attributes match <code>PlayerDetailView.swift</code>, while ratings for the other 7 players are illustrative values (not official league stats). Zero live backend requests are made.
         </div>
       </div>
     `;
@@ -969,11 +969,18 @@ function renderTracePanel() {
   `;
 }
 
+const LEAGUE_STEP_SUMMARY_DISPLAY = {
+  join: "Validates 10 unique existing player IDs and 5 starting-five IDs as a subset, then writes UserLeague and 10 UserLeaguePlayer rows atomically.",
+  start: "Staff-only POST endpoint that generates the round-robin match schedule, prevents duplicate schedules, and transitions league status to 'in_progress'.",
+  record: "Staff-only POST endpoint with non-negative integer score validation that atomically updates Match winner/status and records PlayerStats.",
+};
+
 function renderLeaguePanel() {
   const step = BACKEND_LEAGUE_STEPS.find((s) => s.id === state.selectedLeagueStepId) || BACKEND_LEAGUE_STEPS[0];
+  const stepSummary = LEAGUE_STEP_SUMMARY_DISPLAY[step.id] || step.summary;
   return `
     <div class="backend-only-banner" role="note">
-      <strong>Backend-Only API Surface (Not Wired in SwiftUI):</strong> The Django backend implements relational models (<code>League</code>, <code>UserLeague</code>, <code>UserLeaguePlayer</code>, <code>Match</code>, <code>PlayerStats</code>, <code>TeamStats</code>) and REST endpoints verified by Phase 2A regression tests. They are inspected here transparently rather than fabricated as iOS screens.
+      <strong>Backend-Only API Surface:</strong> The Django backend implements relational models (<code>League</code>, <code>UserLeague</code>, <code>UserLeaguePlayer</code>, <code>Match</code>, <code>PlayerStats</code>, <code>TeamStats</code>) and league management REST endpoints that are not wired into the SwiftUI mobile screens.
     </div>
 
     <div class="step-pills" role="group" aria-label="Backend league workflow steps">
@@ -997,7 +1004,7 @@ function renderLeaguePanel() {
       </div>
     </div>
 
-    <p style="font-size:0.83rem;color:var(--text-muted);margin:0 0 10px">${escapeHtml(step.summary)}</p>
+    <p style="font-size:0.83rem;color:var(--text-muted);margin:0 0 10px">${escapeHtml(stepSummary)}</p>
 
     ${
       step.request !== null
@@ -1013,27 +1020,27 @@ function renderArchPanel() {
   return `
     <div class="arch-grid">
       <div class="arch-card">
-        <h3>Public Asset Rights &amp; Data Provenance</h3>
+        <h3>Media Attribution &amp; Data Provenance</h3>
         <ul>
-          <li><strong>Verified CC photography:</strong> All 8 real-player portraits and the sunset court background are cropped/resized derivatives of Wikimedia Commons CC BY / CC BY-SA photos (documented in <a href="notices.html">Third-Party Notices</a>).</li>
-          <li><strong>Original vector graphics:</strong> <code>basketball-logo.svg</code> and the 4 geometric club badges (<code>GSW</code>, <code>LAL</code>, <code>PHX</code>, <code>FB</code>) are original SVGs avoiding trademarked club marks.</li>
-          <li><strong>Verbatim vs. demo data:</strong> Stephen Curry (97 OVR, Dark Blue Diamond) matches <code>PlayerDetailView.swift:297-314</code> verbatim; the other 7 players carry illustrative demo ratings (not official league stats) because <code>db.sqlite3</code> was untracked in commit <code>9d0362f</code>.</li>
+          <li><strong>Creative Commons photography:</strong> All 8 player portraits and the court backdrop are cropped/resized derivatives of Wikimedia Commons CC BY / CC BY-SA photos (<a href="notices.html">Third-Party Notices</a>).</li>
+          <li><strong>Original vector graphics:</strong> <code>basketball-logo.svg</code> and the 4 geometric club badges (<code>GSW</code>, <code>LAL</code>, <code>PHX</code>, <code>FB</code>) are original SVGs created for this project.</li>
+          <li><strong>Player data context:</strong> Stephen Curry (97 OVR, Dark Blue Diamond) matches <code>PlayerDetailView.swift</code> verbatim; the other 7 player profiles use illustrative ratings (not official NBA or EuroLeague stats).</li>
         </ul>
       </div>
       <div class="arch-card">
-        <h3>Django 5.2 DRF Backend (Remediated)</h3>
+        <h3>Django 5.2 DRF Backend</h3>
         <ul>
-          <li>Environment-only <code>DJANGO_SECRET_KEY</code> (fail-closed when <code>DEBUG=False</code>), explicit CORS allowlist, pinned security updates.</li>
-          <li><code>IsAdminOrReadOnly</code> on Team/Player catalogs; staff-only schedule creation &amp; match result recording.</li>
-          <li>Atomic <code>OpenCardPackView</code> credit deduction + card creation; verified by 13 Django API regression tests.</li>
+          <li>Environment-only <code>DJANGO_SECRET_KEY</code> (fail-closed when <code>DEBUG=False</code>) with an explicit CORS allowlist.</li>
+          <li><code>IsAdminOrReadOnly</code> on Team/Player catalogs; staff-only league schedule creation and match result recording.</li>
+          <li>Atomic <code>OpenCardPackView</code> credit deduction, weighted rarity roll, and <code>UserCard</code> creation.</li>
         </ul>
       </div>
       <div class="arch-card">
-        <h3>Honest Scope &amp; Limitations</h3>
+        <h3>Preview Scope &amp; Limitations</h3>
         <ul>
-          <li><strong>Source-faithful scope:</strong> Demonstrates only verified SwiftUI and Django REST capabilities; unimplemented features are excluded.</li>
-          <li><strong>SQLite concurrency note:</strong> SQLite lacks row-level <code>SELECT ... FOR UPDATE</code>; conditional atomic updates protect balances under SQLite's DB write lock, while PostgreSQL is recommended for multi-worker concurrency.</li>
-          <li><strong>Browser simulation:</strong> Runs entirely statically with zero live API or database dependency.</li>
+          <li><strong>Backend-only league engine:</strong> League creation, round-robin schedules, match results, and standings are implemented in Django DRF and inspectable in the League Engine tab, while the SwiftUI client focuses on cards, packs, rosters, and collections.</li>
+          <li><strong>SQLite concurrency note:</strong> SQLite lacks row-level <code>SELECT ... FOR UPDATE</code>; conditional atomic updates protect balances under SQLite's write lock, while PostgreSQL is recommended for multi-worker concurrency.</li>
+          <li><strong>Offline browser simulation:</strong> Runs entirely client-side with zero live API, authentication server, or database requests.</li>
         </ul>
       </div>
     </div>
@@ -1285,10 +1292,10 @@ function bindDynamicEvents() {
 const TUTORIAL_STAGES = [
   {
     id: "welcome",
-    title: "Welcome & Project Identity",
+    title: "Welcome to Fantasy Basketball",
     tourKey: "welcome",
     durationMs: 3600,
-    narration: "Fantasy Basketball pairs a native SwiftUI iOS client with a Django REST Framework backend. Watch each real demo screen and synchronized API trace step by step.",
+    narration: "Fantasy Basketball pairs a native SwiftUI iOS client with a Django REST Framework backend for collecting player cards, opening packs, and exploring club rosters.",
     enter() {
       state.isLoggedIn = false;
       state.token = null;
@@ -1299,10 +1306,10 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "auth",
-    title: "Simulated Token Authentication",
+    title: "Token Authentication Flow",
     tourKey: "welcome",
     durationMs: 3600,
-    narration: "LoginView authenticates against Django's token endpoint and stores a session token in the client — simulated safely in the browser with zero live credentials.",
+    narration: "LoginView models Django token authentication locally, issuing a preview session token without live backend calls or real credentials.",
     enter() {
       state.isLoggedIn = false;
       state.token = null;
@@ -1312,11 +1319,11 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "home-teams",
-    title: "Home Navigation & Club Rosters",
+    title: "Home Hub & Club Rosters",
     tourKey: "teams",
     durationMs: 4400,
     subDelayMs: 1800,
-    narration: "After demo login, HomeView opens the pure NavigationStack hub and drills into TeamsView showing all four clubs with original geometric monogram badges.",
+    narration: "After signing in, HomeView opens the SwiftUI navigation hub before drilling into TeamsView to browse all four clubs.",
     enter() {
       state.inspectorTab = "trace";
       navigate("home");
@@ -1327,11 +1334,11 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "players-filter",
-    title: "Player Directory & Live Filters",
+    title: "Player Directory & Filters",
     tourKey: "players",
     durationMs: 4400,
     subDelayMs: 1700,
-    narration: "PlayersView renders all 8 players with four instant client-side filters. Applying Position = Guard and Min OVR = 90 narrows the grid immediately.",
+    narration: "PlayersView lists all 8 players with four client-side filters. Filtering by Guard and 90+ OVR narrows the grid immediately.",
     enter() {
       state.inspectorTab = "trace";
       state.filters = { position: "All", country: "All", team: "All", minRating: 0 };
@@ -1356,11 +1363,11 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "player-flip",
-    title: "3D Flippable Collectible Card",
+    title: "3D Collectible Player Card",
     tourKey: "player-card",
     durationMs: 4400,
     subDelayMs: 1700,
-    narration: "PlayerDetailView displays rarity-styled cards with diagonal shine for high tiers and flips 180° on tap to reveal Best Skill and physical attributes.",
+    narration: "PlayerDetailView styles each card by rarity tier and flips 180° on tap to reveal Best Skill and physical attributes.",
     enter() {
       state.inspectorTab = "trace";
       navigate("player-detail", { playerId: PLAYERS[0].id, from: "players" });
@@ -1372,10 +1379,10 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "pack-market",
-    title: "PackMarket Tiers & Credits",
+    title: "PackMarket & Credit Tiers",
     tourKey: "market",
     durationMs: 3600,
-    narration: "PackMarket lists Gold (500), Amethyst (800), and Diamond (1,000) packs alongside the player's current coin balance.",
+    narration: "PackMarket presents Gold (500), Amethyst (800), and Diamond (1,000) card packs alongside your current credit balance.",
     enter() {
       state.inspectorTab = "trace";
       if (state.credits < 1000) state.credits = STARTING_CREDITS;
@@ -1384,11 +1391,11 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "pack-open",
-    title: "Atomic Pack Opening Simulation",
+    title: "Pack Opening & Drop Odds",
     tourKey: "pack-diamond",
     durationMs: 4600,
     subDelayMs: 1100,
-    narration: "Opening the Diamond Pack runs the 360° spinner, deducts credits atomically via POST /api/open-pack/, records the trace, and reveals the pulled card.",
+    narration: "Opening a Diamond Pack triggers the spin animation, deducts credits via simulated POST /api/open-pack/, and reveals the pulled player card.",
     enter() {
       state.inspectorTab = "trace";
       if (state.credits < 1000) state.credits = STARTING_CREDITS;
@@ -1405,7 +1412,7 @@ const TUTORIAL_STAGES = [
     title: "My Cards Collection",
     tourKey: "my-cards",
     durationMs: 3600,
-    narration: "MyCardsView loads owned UserCard entries from /api/my-cards/, immediately showing the newly opened card in the personal collection.",
+    narration: "MyCardsView loads owned cards from /api/my-cards/, immediately displaying the newly pulled card in your personal collection.",
     enter() {
       state.inspectorTab = "trace";
       if (state.myCards.length === 0) {
@@ -1420,11 +1427,11 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "inspector",
-    title: "Engineering Inspector & Backend League Engine",
+    title: "API Trace & League Engine",
     tourKey: "my-cards",
     durationMs: 4400,
     subDelayMs: 1900,
-    narration: "The right-hand inspector records live Django REST serializer traces and documents backend-only league endpoints (not wired into the SwiftUI screens).",
+    narration: "The companion inspector logs each simulated DRF request and documents the backend-only league, schedule, and standings endpoints.",
     enter() {
       state.inspectorTab = "trace";
       render();
@@ -1436,10 +1443,10 @@ const TUTORIAL_STAGES = [
   },
   {
     id: "finish",
-    title: "Tutorial Complete — Explore Manually",
+    title: "Tour Complete — Explore Freely",
     tourKey: "home",
     durationMs: 0,
-    narration: "Guided walkthrough complete. Replay the tutorial anytime, or exit to explore every SwiftUI screen, filter, pack tier, and API trace manually.",
+    narration: "Walkthrough complete. Replay anytime or exit to explore every SwiftUI screen, filter, card pack, and API trace manually.",
     enter() {
       state.inspectorTab = "trace";
       state.filters = { position: "All", country: "All", team: "All", minRating: 0 };

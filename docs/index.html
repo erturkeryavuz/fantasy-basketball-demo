@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fantasy Basketball — Full-Stack iOS &amp; Django Showcase</title>
-  <meta name="description" content="Interactive phone-framed showcase of the Fantasy Basketball full-stack SwiftUI and Django REST Framework graduation project with a live API inspector and optional guided tutorial." />
+  <title>Fantasy Basketball — SwiftUI iOS &amp; Django REST Application</title>
+  <meta name="description" content="Fantasy Basketball is a SwiftUI iOS and Django REST Framework collectible basketball card and roster-management application featuring 3D player cards, PackMarket openings, and an API inspector." />
   <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -21,7 +21,7 @@
           <img src="assets/basketball-logo.svg" width="30" height="30" alt="" aria-hidden="true" class="brand-emblem" />
           <div>
             <div class="brand-title">Fantasy Basketball</div>
-            <div class="brand-sub">SwiftUI iOS &amp; Django REST API</div>
+            <div class="brand-sub">iOS &amp; Django Basketball App</div>
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@
         <button id="btnWatchTutorial" class="btn btn-tutorial" type="button" aria-controls="tutorialDock" aria-expanded="false">
           ▶ Watch Tutorial
         </button>
-        <button id="btnAddCredits" class="btn" type="button" title="Add demo credits to test all three pack tiers">
+        <button id="btnAddCredits" class="btn" type="button" title="Add 1,000 preview credits to test all pack tiers">
           +1,000 Credits
         </button>
         <button id="btnResetDemo" class="btn btn-ghost" type="button">
@@ -47,35 +47,39 @@
     <section class="hero-strip" aria-labelledby="heroHeading">
       <div class="hero-grid">
         <div class="hero-copy">
-          <p class="hero-kicker">Full-Stack iOS &amp; Django Project · Maltepe University</p>
+          <p class="hero-kicker">Full-Stack iOS &amp; Django · Maltepe University</p>
           <h1 id="heroHeading" class="hero-title">Fantasy <em>Basketball</em></h1>
           <p class="hero-desc">
-            A collectible basketball card and roster-management application pairing a native SwiftUI iOS client with a Django REST Framework backend. Launch the guided tutorial or explore the live app and API traces directly.
+            A collectible basketball card and roster-management application pairing a native SwiftUI iOS client with a Django REST Framework backend. Browse club rosters, filter players, open card packs, inspect matching DRF endpoints, or launch the guided tutorial.
           </p>
         </div>
 
         <aside class="hero-meta" aria-label="Project summary">
           <div class="hero-meta-item">
-            <span class="hero-meta-label">Architecture</span>
+            <span class="hero-meta-label">Stack</span>
             <span class="hero-meta-value">SwiftUI · Django 5 · DRF</span>
           </div>
           <div class="hero-meta-item">
-            <span class="hero-meta-label">Highlights</span>
-            <span class="hero-meta-value">3D Card Flip · PackMarket · Live Trace</span>
+            <span class="hero-meta-label">Features</span>
+            <span class="hero-meta-value">3D Player Cards · PackMarket · Club Rosters</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Preview</span>
+            <span class="hero-meta-value">Offline Sample Data · No Live Backend</span>
           </div>
         </aside>
       </div>
     </section>
 
-    <nav class="tour-bar" aria-label="Guided walkthrough">
-      <span class="tour-label">Manual Tour</span>
+    <nav class="tour-bar" aria-label="App screen shortcuts">
+      <span class="tour-label">App Screens</span>
       <button class="tour-pill active" type="button" data-tour="welcome">1. Welcome</button>
       <button class="tour-pill" type="button" data-tour="home">2. Home Menu</button>
       <button class="tour-pill" type="button" data-tour="market">3. PackMarket</button>
       <button class="tour-pill" type="button" data-tour="pack-diamond">4. Open Pack</button>
       <button class="tour-pill" type="button" data-tour="my-cards">5. My Cards</button>
       <button class="tour-pill" type="button" data-tour="players">6. Players Grid</button>
-      <button class="tour-pill" type="button" data-tour="player-card">7. Stephen Curry 3D Card</button>
+      <button class="tour-pill" type="button" data-tour="player-card">7. 3D Player Card</button>
       <button class="tour-pill" type="button" data-tour="teams">8. Teams</button>
     </nav>
 
@@ -122,7 +126,7 @@
           </div>
         </div>
         <p class="phone-caption">
-          Interactive SwiftUI browser simulation · <a href="notices.html">Media credits &amp; licenses</a>
+          Interactive SwiftUI browser preview · <a href="notices.html">Media credits &amp; licenses</a>
         </p>
       </section>
 
@@ -154,10 +158,10 @@
         <span class="footer-sep" aria-hidden="true">·</span>
         <a href="notices.html">Photo Credits &amp; Licenses</a>
         <span class="footer-sep" aria-hidden="true">·</span>
-        <a href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">Public Demo Repo</a>
+        <a href="https://github.com/erturkeryavuz/fantasy-basketball-demo" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
       </div>
       <div class="footer-meta">
-        <span>Unaffiliated portfolio showcase · Built by <a href="https://github.com/erturkeryavuz" target="_blank" rel="noopener noreferrer">Ertürk Eryavuz</a></span>
+        <span>Independent portfolio project by <a href="https://github.com/erturkeryavuz" target="_blank" rel="noopener noreferrer">Ertürk Eryavuz</a> · Unaffiliated with NBA/EuroLeague · Offline sample data</span>
       </div>
     </footer>
   </main>
